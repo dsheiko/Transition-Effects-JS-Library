@@ -1,0 +1,33 @@
+body {
+    background-color: #DDDDDD;
+    color: #222222;
+    font: 14px Arial;
+    margin: 0;
+    padding: 0;
+    line-height: 150%;
+}
+
+a, a:visited {
+    color: black;
+}
+
+div.content {
+    background-color: #FFFFFF;
+    -webkit-box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+     -moz-box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+      -o-box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+       box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+    margin: 0 auto;
+    max-width: 750px;
+    padding: 20px 40px 40px 40px;
+}
+
+
+div.boundingBox {
+    border: 1px solid red;
+    width: 400px;
+    height: 400px;
+}
+div.boundingBox img {
+    visibility: hidden;
+}

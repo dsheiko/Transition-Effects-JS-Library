@@ -1,0 +1,38 @@
+/* 
+    Document   : t-effects
+    Created on : 01-Feb-2012, 11:04:19
+    Author     : Dmitry Sheiko
+    Description:
+        Supports transittional effect library with stylesheets.
+*/
+
+.te-transition {   
+ -webkit-transition: all 1s ease-in-out;
+  -moz-transition: all 1s ease-in-out;
+   -o-transition: all 1s ease-in-out;
+    transition: all 1s ease-in-out;
+}
+.te-boundingBox {
+    position: relative;
+}
+.te-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid blue;
+}
+.te-opacity-min {
+    -webkit-opacity: 0;
+      -moz-opacity: 0;
+       -o-opacity: 0;
+        opacity: 0;
+}
+.te-opacity-max {
+    -webkit-opacity: 1.0;
+      -moz-opacity: 1.0;
+       -o-opacity: 1.0;
+        opacity: 1.0;
+}
+

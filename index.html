@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Transition Effects</title>
+    <link href="./assets/default.css" rel="stylesheet" media="all" />
+    <link href="./assets/t-effects.css" rel="stylesheet" media="all" />
+    <link rel="shortcut icon" href="./assets/favicon.ico" />
+    <link rel="icon" href="./assets/favicon.ico" type="image/ico">
+    <script src="./js/jquery.min.js" type="text/javascript"></script>
+    <script src="./js/jquery.a-queue.js" type="text/javascript"></script>
+    <script src="./js/jquery.t-effects.js" type="text/javascript"></script>
+</head>
+<body>
+    <div class="content">
+        <div class="boundingBox">
+            <img src="./assets/sample_frankfurt.jpg" />
+            <img src="./assets/sample_wiesbaden.jpg" />
+            <img src="./assets/sample_palmengarten.jpg" />
+        </div>
+        <button>Test</button>
+    </div>
+    <script type="text/javascript">
+    // Document is ready
+    $(document).bind('ready.app', function(){
+       var el = $('div.boundingBox'), imgs = el.find('img');
+       //effect = $.tEffects.FadeInOut({boundingBox: el});
+       $.tEffects({
+           boundingBox: el,
+           effect: "FadeInOut",
+           triggerNext: {
+               node: $('button'),
+               event: 'click'
+           }
+       });
+       /*
+       el.css('backgroundImage', 'url(' + $(imgs[0]).attr('src') + ')');
+       effect.render();
+       $('button').bind('click', effect, function(e) {
+            e.data.apply(imgs[0], imgs[1]);
+       });
+       */
+    });
+    </script>
+</body>
+</html>
