@@ -29,18 +29,24 @@ $.tEffects = function(settings) {
             node : {
                 boundingBox : settings.boundingBox,
                 overlay : null,
+                slider : null,
                 images: settings.boundingBox.find("img")
             },
             index: 0,
+            canvas: {
+                width: 0,
+                height: 0
+            },
             listLength: 0,
             driver: 0,
             init: function() {
                 this.listLength = this.node.images.length;
                 this.checkEntryConditions();
-                this.render();
-                this.driver = new $.tEffects[settings.effect](this);
-                this.driver.init();
-                this.syncUI();
+                this.render(function() {
+                    this.driver = new $.tEffects[settings.effect](this);
+                    this.driver.init();
+                    this.syncUI();
+                });
             },
             checkEntryConditions: function() {
                 if (!this.listLength) {
@@ -50,37 +56,51 @@ $.tEffects = function(settings) {
                     throw "Given effect function not found";
                 }
             },
-            render : function() {                
+            render : function(callback) {
                    this.node.boundingBox.css('backgroundImage', 'url(' + this.getImage().attr('src') + ')');
+                   this.updateTriggersState();
+                   $(this.node.images[0]).bind("load", this, function(e){
+                       e.data.canvas.width = $(this).width();
+                       e.data.canvas.height = $(this).height();
+                       e.data.node.boundingBox.css("width", e.data.canvas.width).css("height", e.data.canvas.height);
+                       callback.apply(e.data, arguments);
+                   });
+                   
             },
-            syncUI : function(driver) {
+            isset : function(val) {
+                return (typeof val !== "undefined");
+            },
+            updateTriggersState: function() {
+                if (this.isset(settings.triggerNext)) {
+                    $(settings.triggerNext.node)[(this.getImage(1).length ? "removeClass" : "addClass")]("te-trigger-inactive");
+                }
+                if (this.isset(settings.triggerPrev)) {                    
+                    $(settings.triggerPrev.node)[(this.getImage(-1).length ? "removeClass" : "addClass")]("te-trigger-inactive");
+                }
+            },
+            syncUI : function() {
                 if (typeof settings.triggerNext !== "undefined") {
                     $(settings.triggerNext.node).bind(settings.triggerNext.event, this, function(e) {
-                        var manager = e.data, img = manager.getImage(1);
-                        if (typeof img !== "undefined") {
-                            manager.driver.apply( manager.getImage(), img);
-                            manager.index ++;
-                            $(this).addClass("te-visible");
-                        } else {
-                            $(this).addClass("te-hidden");
-                        }
+                        e.preventDefault();
+                        if ($(this).hasClass("te-trigger-inactive")) { return false; }
+                        var manager = e.data;                        
+                        manager.driver.apply(manager.index + 1);
+                        manager.index ++;
+                        manager.updateTriggersState();
                     });
                 }
-                if (typeof settings.triggerPrev !== "undefined") {
-                    $(settings.triggerPrev.node).bind(settings.triggerPrev.event, driver, function(e) {
-                        var manager = e.data, img = manager.getImage(-1);
-                        if (typeof img !== "undefined") {
-                            manager.driver.apply( manager.getImage(), img);
-                            this.index --;
-                            $(this).addClass("te-visible");
-                        } else {
-                            $(this).addClass("te-hidden");
-                        }
+                 if (typeof settings.triggerPrev !== "undefined") {
+                    $(settings.triggerPrev.node).bind(settings.triggerPrev.event, this, function(e) {
+                        e.preventDefault();
+                        if ($(this).hasClass("te-trigger-inactive")) { return false; }
+                        var manager = e.data;
+                        manager.driver.apply(manager.index - 1);
+                        manager.index --;
+                        manager.updateTriggersState();
                     });
                 }
-
             },
-            getImage: function(key) {                
+            getImage: function(key) {
                 switch (key) {
                     case 1:
                         return $(this.node.images[this.index + 1]);
@@ -97,12 +117,6 @@ $.tEffects = function(settings) {
 
 $.tEffects.FadeInOut = function(manager) {
     var _node = manager.node;
-    varstateHander = {
-        started : function() {
-            _node.overlay.toggleClass('te-opacity-max te-opacity-min');
-        }
-
-    }
     return {
         init: function() {
             this.manager = manager;
@@ -113,27 +127,66 @@ $.tEffects.FadeInOut = function(manager) {
             _node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
                 .appendTo(_node.boundingBox);
         },
-        apply: function(img1, img2) {
-            console.log(img1, img2);
-            _node.overlay.removeClass('te-transition');
-            _node.boundingBox.css('backgroundImage', 'url(' + img1.attr('src') + ')');
-            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');
-            _node.overlay.removeClass('te-opacity-max');
-            _node.overlay.addClass('te-opacity-min');
-            
+        apply: function(index) {
+            img1 = manager.getImage();
+            img2 = _node.images[index];
+            if (!_node.overlay.hasClass('te-initialized')) {
+                _node.overlay.addClass('te-initialized te-transition te-opacity-min');
+            }
             var method = 'apply' + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
             this[method](img1, img2);
         },
         applyCss: function(img1, img2) {
-            _node.overlay.addClass('te-transition');
+            var isDirect = _node.overlay.hasClass('te-opacity-min');
+            _node.boundingBox.css('backgroundImage', 'url(' + (isDirect ? img1.attr('src') : img2.attr('src')) + ')');
+            _node.overlay.css('backgroundImage', 'url(' + (isDirect ? img2.attr('src') : img1.attr('src')) + ')');
             _node.overlay.toggleClass('te-opacity-max te-opacity-min');
         },
         applyJs: function(img1, img2) {
-            $.aQueue.add({
-                startedCallback: tEffect._fadeStarted,
-                iteratedCallback: tEffect._fadeIterated,
-                completedCallback: tEffect._fadeCompleted,
-                iterations: 3,
+            _node.boundingBox.css('backgroundImage', 'url(' + img1.attr('src')  + ')');
+            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');
+            _node.overlay.hide();
+            _node.overlay.fadeIn('slow');
+        }
+    }
+}
+
+$.tEffects.HorizontalScroll = function(manager) {
+    var _node = manager.node;
+    return {
+        init: function() {
+            this.manager = manager;
+            this.render();
+        },
+        render: function() {            
+            _node.boundingBox.addClass('te-boundingBox');
+            _node.boundingBox.css('overflow', "hidden");
+            _node.boundingBox.html('');
+            _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
+            _node.slider.append(_node.images);
+            _node.slider.css("width", manager.canvas.width * manager.listLength);
+            _node.slider.find("img").css("visibility", "visible");
+        },
+        apply: function(index) {
+            var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
+            this[method](index);
+        },
+        applyCss: function(index) {
+            var command = "translate(-" + (index * manager.canvas.width) + "px, 0)";
+            _node.slider.css("transform", command)
+                .css("-moz-transform", command)
+                .css("-webkit-transform", command)
+                .css("-o-transform", command);
+        },
+        applyJs: function(index) {
+             var offset = index * manager.canvas.width;
+             $.aQueue.add({
+                startedCallback: function(){},
+                iteratedCallback: function(i){
+                    _node.slider.scrollLeft(offset - (manager.canvas.width / 10 * i));
+                },
+                completedCallback: function(){},
+                iterations: 10,
                 delay: 100,
                 scope: this}).run();
         }

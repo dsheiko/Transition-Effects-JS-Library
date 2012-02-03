@@ -18,7 +18,8 @@
             <img src="./assets/sample_wiesbaden.jpg" />
             <img src="./assets/sample_palmengarten.jpg" />
         </div>
-        <button>Test</button>
+        <button class="prev">Prev</button>
+        <button class="next">Next</button>
     </div>
     <script type="text/javascript">
     // Document is ready
@@ -27,9 +28,13 @@
        //effect = $.tEffects.FadeInOut({boundingBox: el});
        $.tEffects({
            boundingBox: el,
-           effect: "FadeInOut",
+           effect: "HorizontalScroll",
            triggerNext: {
-               node: $('button'),
+               node: $('button.next'),
+               event: 'click'
+           },
+           triggerPrev: {
+               node: $('button.prev'),
                event: 'click'
            }
        });

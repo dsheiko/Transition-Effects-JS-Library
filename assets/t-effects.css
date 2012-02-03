@@ -35,4 +35,11 @@
        -o-opacity: 1.0;
         opacity: 1.0;
 }
+.te-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+}
+
 

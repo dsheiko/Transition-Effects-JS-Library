@@ -25,9 +25,13 @@ div.content {
 
 div.boundingBox {
     border: 1px solid red;
-    width: 400px;
-    height: 400px;
+    width: 525px;
+    height: 700px;
 }
 div.boundingBox img {
     visibility: hidden;
+}
+.te-trigger-inactive {
+    background: white;
+    color: #555;
 }
