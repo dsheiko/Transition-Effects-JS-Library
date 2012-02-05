@@ -128,7 +128,7 @@ $.tEffects.FadeInOut = function(manager) {
                 .appendTo(_node.boundingBox);
         },
         apply: function(index) {
-            img1 = manager.getImage();
+            var img1 = manager.getImage(),
             img2 = _node.images[index];
             if (!_node.overlay.hasClass('te-initialized')) {
                 _node.overlay.addClass('te-initialized te-transition te-opacity-min');
@@ -155,7 +155,6 @@ $.tEffects.HorizontalScroll = function(manager) {
     var _node = manager.node;
     return {
         init: function() {
-            this.manager = manager;
             this.render();
         },
         render: function() {            
@@ -179,15 +178,58 @@ $.tEffects.HorizontalScroll = function(manager) {
                 .css("-o-transform", command);
         },
         applyJs: function(index) {
-             var offset = index * manager.canvas.width;
+             var initX = manager.index * manager.canvas.width, 
+                 offset = (index * manager.canvas.width - initX);
              $.aQueue.add({
                 startedCallback: function(){},
-                iteratedCallback: function(i){
-                    _node.slider.scrollLeft(offset - (manager.canvas.width / 10 * i));
+                iteratedCallback: function(i){                    
+                    _node.boundingBox.scrollLeft(initX + Math.ceil(offset / 10 * i));
                 },
                 completedCallback: function(){},
                 iterations: 10,
-                delay: 100,
+                delay: 50,
+                scope: this}).run();
+        }
+    }
+}
+
+$.tEffects.VerticalScroll = function(manager) {
+    var _node = manager.node;
+    return {
+        init: function() {
+            this.render();
+        },
+        render: function() {            
+            _node.boundingBox.addClass('te-boundingBox');
+            _node.boundingBox.css('overflow', "hidden");
+            _node.boundingBox.html('');
+            _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
+            _node.slider.append(_node.images);
+            _node.slider.css("height", manager.canvas.height * manager.listLength);
+            _node.slider.find("img").css("visibility", "visible");
+        },
+        apply: function(index) {
+            var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
+            this[method](index);
+        },
+        applyCss: function(index) {
+            var command = "translate(0, -" + (index * manager.canvas.height) + "px)";
+            _node.slider.css("transform", command)
+                .css("-moz-transform", command)
+                .css("-webkit-transform", command)
+                .css("-o-transform", command);
+        },
+        applyJs: function(index) {
+             var initY = manager.index * manager.canvas.height, 
+                 offset = (index * manager.canvas.height - initY);
+             $.aQueue.add({
+                startedCallback: function(){},
+                iteratedCallback: function(i){                    
+                    _node.boundingBox.scrollTop(initY + Math.ceil(offset / 10 * i));
+                },
+                completedCallback: function(){},
+                iterations: 10,
+                delay: 50,
                 scope: this}).run();
         }
     }
