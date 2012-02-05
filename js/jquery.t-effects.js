@@ -39,8 +39,10 @@ $.tEffects = function(settings) {
             },
             listLength: 0,
             driver: 0,
+            duration: 1, // sec
             init: function() {
                 this.listLength = this.node.images.length;
+                this.duration = settings.duration || 1;
                 this.checkEntryConditions();
                 this.render(function() {
                     this.driver = new $.tEffects[settings.effect](this);
@@ -226,6 +228,48 @@ $.tEffects.VerticalScroll = function(manager) {
                 startedCallback: function(){},
                 iteratedCallback: function(i){                    
                     _node.boundingBox.scrollTop(initY + Math.ceil(offset / 10 * i));
+                },
+                completedCallback: function(){},
+                iterations: 10,
+                delay: 50,
+                scope: this}).run();
+        }
+    }
+}
+
+$.tEffects.Jalousie = function(manager) {
+    var _node = manager.node;
+    return {
+        init: function() {
+            this.render();
+        },
+        render: function() {            
+            _node.boundingBox.addClass('te-boundingBox');
+            _node.boundingBox.css('overflow', "hidden");
+            _node.boundingBox.html('');
+            _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
+            _node.slider.append(_node.images);
+            _node.slider.css("width", manager.canvas.width * manager.listLength);
+            _node.slider.find("img").css("visibility", "visible");
+        },
+        apply: function(index) {
+            var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
+            this[method](index);
+        },
+        applyCss: function(index) {
+            var command = "translate(-" + (index * manager.canvas.width) + "px, 0)";
+            _node.slider.css("transform", command)
+                .css("-moz-transform", command)
+                .css("-webkit-transform", command)
+                .css("-o-transform", command);
+        },
+        applyJs: function(index) {
+             var initX = manager.index * manager.canvas.width, 
+                 offset = (index * manager.canvas.width - initX);
+             $.aQueue.add({
+                startedCallback: function(){},
+                iteratedCallback: function(i){                    
+                    _node.boundingBox.scrollLeft(initX + Math.ceil(offset / 10 * i));
                 },
                 completedCallback: function(){},
                 iterations: 10,
