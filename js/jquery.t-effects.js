@@ -61,7 +61,11 @@ $.tEffects = function(settings) {
             render : function(callback) {
                    this.node.boundingBox.css('backgroundImage', 'url(' + this.getImage().attr('src') + ')');
                    this.updateTriggersState();
-                   $(this.node.images[0]).bind("load", this, function(e){
+
+                   // Workaround for image load event binding with IE bug
+                   $(this.node.images[0]).attr('src', function(i, val) {
+                      return val + "?v=" + (new Date()).getTime()
+                    }).bind("load", this, function(e){
                        e.data.canvas.width = $(this).width();
                        e.data.canvas.height = $(this).height();
                        e.data.node.boundingBox.css("width", e.data.canvas.width).css("height", e.data.canvas.height);
@@ -136,19 +140,22 @@ $.tEffects.FadeInOut = function(manager) {
                 _node.overlay.addClass('te-initialized te-transition te-opacity-min');
             }
             var method = 'apply' + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
-            this[method](img1, img2);
+            this[method](img1, img2, function(){
+                $(document).trigger('apply.t-effect', [img2]);
+            });
         },
-        applyCss: function(img1, img2) {
+        applyCss: function(img1, img2, callback) {
             var isDirect = _node.overlay.hasClass('te-opacity-min');
             _node.boundingBox.css('backgroundImage', 'url(' + (isDirect ? img1.attr('src') : img2.attr('src')) + ')');
             _node.overlay.css('backgroundImage', 'url(' + (isDirect ? img2.attr('src') : img1.attr('src')) + ')');
             _node.overlay.toggleClass('te-opacity-max te-opacity-min');
+            callback();
         },
         applyJs: function(img1, img2) {
             _node.boundingBox.css('backgroundImage', 'url(' + img1.attr('src')  + ')');
             _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');
             _node.overlay.hide();
-            _node.overlay.fadeIn('slow');
+            _node.overlay.fadeIn('slow', callback);
         }
     }
 }
@@ -170,16 +177,18 @@ $.tEffects.HorizontalScroll = function(manager) {
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
-            this[method](index);
+            this[method](index, function(){
+                $(document).trigger('apply.t-effect', [index]);
+            });
         },
-        applyCss: function(index) {
+        applyCss: function(index, callback) {
             var command = "translate(-" + (index * manager.canvas.width) + "px, 0)";
             _node.slider.css("transform", command)
                 .css("-moz-transform", command)
                 .css("-webkit-transform", command)
                 .css("-o-transform", command);
         },
-        applyJs: function(index) {
+        applyJs: function(index, callback) {
              var initX = manager.index * manager.canvas.width, 
                  offset = (index * manager.canvas.width - initX);
              $.aQueue.add({
@@ -187,7 +196,7 @@ $.tEffects.HorizontalScroll = function(manager) {
                 iteratedCallback: function(i){                    
                     _node.boundingBox.scrollLeft(initX + Math.ceil(offset / 10 * i));
                 },
-                completedCallback: function(){},
+                completedCallback: callback,
                 iterations: 10,
                 delay: 50,
                 scope: this}).run();
@@ -209,19 +218,23 @@ $.tEffects.VerticalScroll = function(manager) {
             _node.slider.append(_node.images);
             _node.slider.css("height", manager.canvas.height * manager.listLength);
             _node.slider.find("img").css("visibility", "visible");
+
+            // Delay from _node.slider.css('mozTransition')
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
-            this[method](index);
+            this[method](index, function(){
+                $(document).trigger('apply.t-effect', [index]);
+            });
         },
-        applyCss: function(index) {
+        applyCss: function(index, callback) {
             var command = "translate(0, -" + (index * manager.canvas.height) + "px)";
             _node.slider.css("transform", command)
                 .css("-moz-transform", command)
                 .css("-webkit-transform", command)
                 .css("-o-transform", command);
         },
-        applyJs: function(index) {
+        applyJs: function(index, callback) {
              var initY = manager.index * manager.canvas.height, 
                  offset = (index * manager.canvas.height - initY);
              $.aQueue.add({
@@ -229,7 +242,7 @@ $.tEffects.VerticalScroll = function(manager) {
                 iteratedCallback: function(i){                    
                     _node.boundingBox.scrollTop(initY + Math.ceil(offset / 10 * i));
                 },
-                completedCallback: function(){},
+                completedCallback: callback,
                 iterations: 10,
                 delay: 50,
                 scope: this}).run();
@@ -254,16 +267,18 @@ $.tEffects.Jalousie = function(manager) {
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
-            this[method](index);
+            this[method](index, function(){
+                $(document).trigger('apply.t-effect', [index]);
+            });
         },
-        applyCss: function(index) {
+        applyCss: function(index, callback) {
             var command = "translate(-" + (index * manager.canvas.width) + "px, 0)";
             _node.slider.css("transform", command)
                 .css("-moz-transform", command)
                 .css("-webkit-transform", command)
                 .css("-o-transform", command);
         },
-        applyJs: function(index) {
+        applyJs: function(index, callback) {
              var initX = manager.index * manager.canvas.width, 
                  offset = (index * manager.canvas.width - initX);
              $.aQueue.add({
@@ -271,7 +286,7 @@ $.tEffects.Jalousie = function(manager) {
                 iteratedCallback: function(i){                    
                     _node.boundingBox.scrollLeft(initX + Math.ceil(offset / 10 * i));
                 },
-                completedCallback: function(){},
+                completedCallback: callback,
                 iterations: 10,
                 delay: 50,
                 scope: this}).run();
