@@ -9,6 +9,8 @@
 */
 (function( $ ) {
 
+var NEXT = "next", PREV = "prev";
+
 Util = {
     ucfirst : function(str) {
        str += '';
@@ -58,10 +60,8 @@ $.tEffects = function(settings) {
                     throw "Given effect function not found";
                 }
             },
-            render : function(callback) {
-                   this.node.boundingBox.css('backgroundImage', 'url(' + this.getImage().attr('src') + ')');
+            render : function(callback) {                   
                    this.updateTriggersState();
-
                    // Workaround for image load event binding with IE bug
                    $(this.node.images[0]).attr('src', function(i, val) {
                       return val + "?v=" + (new Date()).getTime()
@@ -78,10 +78,10 @@ $.tEffects = function(settings) {
             },
             updateTriggersState: function() {
                 if (this.isset(settings.triggerNext)) {
-                    $(settings.triggerNext.node)[(this.getImage(1).length ? "removeClass" : "addClass")]("te-trigger-inactive");
+                    $(settings.triggerNext.node)[(this.getImage(NEXT).length ? "removeClass" : "addClass")]("te-trigger-inactive");
                 }
                 if (this.isset(settings.triggerPrev)) {                    
-                    $(settings.triggerPrev.node)[(this.getImage(-1).length ? "removeClass" : "addClass")]("te-trigger-inactive");
+                    $(settings.triggerPrev.node)[(this.getImage(PREV).length ? "removeClass" : "addClass")]("te-trigger-inactive");
                 }
             },
             syncUI : function() {
@@ -107,14 +107,17 @@ $.tEffects = function(settings) {
                 }
             },
             getImage: function(key) {
-                switch (key) {
-                    case 1:
-                        return $(this.node.images[this.index + 1]);
-                    case -1:
-                        return $(this.node.images[this.index - 1]);
-                    default:
-                        return $(this.node.images[this.index]);
-                }
+                if (typeof key === "string") {
+                    switch (key) {
+                        case "next":
+                            return $(this.node.images[this.index + 1]);
+                        case "prev":
+                            return $(this.node.images[this.index - 1]);
+                        default:
+                            throw "Insufficient key";
+                    }
+                }                
+                return $(this.node.images[key ? key : this.index]);                
             }
         }
     }
@@ -128,14 +131,15 @@ $.tEffects.FadeInOut = function(manager) {
             this.manager = manager;
             this.render();
         },
-        render: function() {
+        render: function() {            
+            _node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')');
             _node.boundingBox.addClass('te-boundingBox');
             _node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
                 .appendTo(_node.boundingBox);
         },
         apply: function(index) {
             var img1 = manager.getImage(),
-            img2 = _node.images[index];
+            img2 = manager.getImage(index);
             if (!_node.overlay.hasClass('te-initialized')) {
                 _node.overlay.addClass('te-initialized te-transition te-opacity-min');
             }
@@ -173,7 +177,7 @@ $.tEffects.HorizontalScroll = function(manager) {
             _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
             _node.slider.append(_node.images);
             _node.slider.css("width", manager.canvas.width * manager.listLength);
-            _node.slider.find("img").css("visibility", "visible");
+            _node.slider.find("img").css("display", "inline").css("visibility", "visible");
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
@@ -217,9 +221,7 @@ $.tEffects.VerticalScroll = function(manager) {
             _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
             _node.slider.append(_node.images);
             _node.slider.css("height", manager.canvas.height * manager.listLength);
-            _node.slider.find("img").css("visibility", "visible");
-
-            // Delay from _node.slider.css('mozTransition')
+            _node.slider.find("img").css("display", "block").css("visibility", "visible");
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
@@ -228,7 +230,7 @@ $.tEffects.VerticalScroll = function(manager) {
             });
         },
         applyCss: function(index, callback) {
-            var command = "translate(0, -" + (index * manager.canvas.height) + "px)";
+            var command = "translateY(-" + (index * manager.canvas.height) + "px)";
             _node.slider.css("transform", command)
                 .css("-moz-transform", command)
                 .css("-webkit-transform", command)

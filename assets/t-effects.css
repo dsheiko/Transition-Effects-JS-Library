@@ -15,6 +15,9 @@
 .te-boundingBox {
     position: relative;
 }
+.te-boundingBox img {
+    border: 0;
+}
 .te-overlay {
     position: absolute;
     top: 0;
