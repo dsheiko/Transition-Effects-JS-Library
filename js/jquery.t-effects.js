@@ -40,15 +40,15 @@ $.tEffects = function(settings) {
                 height: 0
             },
             listLength: 0,
-            driver: 0,
+            driver: null,
             duration: 1, // sec
             init: function() {
                 this.listLength = this.node.images.length;
                 this.duration = settings.duration || 1;
-                this.checkEntryConditions();
+                this.checkEntryConditions();                
                 this.render(function() {
                     this.driver = new $.tEffects[settings.effect](this);
-                    this.driver.init();
+                    this.driver.init();                    
                     this.syncUI();
                 });
             },
@@ -69,7 +69,9 @@ $.tEffects = function(settings) {
                        e.data.canvas.width = $(this).width();
                        e.data.canvas.height = $(this).height();
                        e.data.node.boundingBox.css("width", e.data.canvas.width).css("height", e.data.canvas.height);
-                       callback.apply(e.data, arguments);
+                       if (e.data.driver === null) {
+                            callback.apply(e.data, arguments);
+                       }
                    });
                    
             },
@@ -117,7 +119,7 @@ $.tEffects = function(settings) {
                             throw "Insufficient key";
                     }
                 }                
-                return $(this.node.images[key ? key : this.index]);                
+                return $(this.node.images[typeof key !== "undefined" ? key : this.index]);                
             }
         }
     }
@@ -140,25 +142,25 @@ $.tEffects.FadeInOut = function(manager) {
         apply: function(index) {
             var img1 = manager.getImage(),
             img2 = manager.getImage(index);
-            if (!_node.overlay.hasClass('te-initialized')) {
-                _node.overlay.addClass('te-initialized te-transition te-opacity-min');
-            }
             var method = 'apply' + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
             this[method](img1, img2, function(){
                 $(document).trigger('apply.t-effect', [img2]);
             });
         },
-        applyCss: function(img1, img2, callback) {
-            var isDirect = _node.overlay.hasClass('te-opacity-min');
-            _node.boundingBox.css('backgroundImage', 'url(' + (isDirect ? img1.attr('src') : img2.attr('src')) + ')');
-            _node.overlay.css('backgroundImage', 'url(' + (isDirect ? img2.attr('src') : img1.attr('src')) + ')');
-            _node.overlay.toggleClass('te-opacity-max te-opacity-min');
+        applyCss: function(img1, img2, callback) {            
+            var isSolid = _node.overlay.css('opacity');
+            if (isSolid === "0") {
+                _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');                 
+            } else {
+                _node.boundingBox.css('backgroundImage', 'url(' + img2.attr('src') + ')');           
+            }
+            _node.overlay.css('opacity', (isSolid === "0") ? '1.0' : '0');
             callback();
         },
-        applyJs: function(img1, img2) {
+        applyJs: function(img1, img2, callback) {
             _node.boundingBox.css('backgroundImage', 'url(' + img1.attr('src')  + ')');
-            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');
             _node.overlay.hide();
+            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');            
             _node.overlay.fadeIn('slow', callback);
         }
     }
