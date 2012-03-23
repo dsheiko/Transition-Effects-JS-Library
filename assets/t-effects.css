@@ -24,8 +24,21 @@
     left: 0;
     right: 0;
     bottom: 0;
-    border: 1px solid blue;
 }
+.te-vertical-linear-grid {
+    overflow: hidden;
+    vertical-align: bottom;    
+}
+.te-grid {
+    display: none;
+}
+
+.te-vertical-linear-grid .te-grid > div {
+    display: inline-block;
+    float: left;
+    background-repeat: no-repeat;    
+}
+
 .te-opacity-min {
     -webkit-opacity: 0;
       -moz-opacity: 0;
