@@ -140,14 +140,13 @@ $.tEffects.FadeInOut = function(manager) {
                 .appendTo(_node.boundingBox);
         },
         apply: function(index) {
-            var img1 = manager.getImage(),
-            img2 = manager.getImage(index);
+            var img = manager.getImage(index);
             var method = 'apply' + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
-            this[method](img1, img2, function(){
-                $(document).trigger('apply.t-effect', [img2]);
+            this[method](img, function(){
+                $(document).trigger('apply.t-effect', [img]);
             });
         },
-        applyCss: function(img1, img2, callback) {            
+        applyCss: function(img2, callback) {            
             var isSolid = _node.overlay.css('opacity');
             if (isSolid === "0") {
                 _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');                 
@@ -157,11 +156,13 @@ $.tEffects.FadeInOut = function(manager) {
             _node.overlay.css('opacity', (isSolid === "0") ? '1.0' : '0');
             callback();
         },
-        applyJs: function(img1, img2, callback) {
-            _node.boundingBox.css('backgroundImage', 'url(' + img1.attr('src')  + ')');
+        applyJs: function(img2, callback) {            
             _node.overlay.hide();
-            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');            
-            _node.overlay.fadeIn('slow', callback);
+            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');
+            _node.overlay.fadeIn('slow', function() {
+                _node.boundingBox.css('backgroundImage', 'url(' + img2.attr('src')  + ')');
+                callback(); 
+            });
         }
     }
 }
