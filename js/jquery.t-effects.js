@@ -221,13 +221,19 @@ $.tEffects.HorizontalScroll = function(manager) {
             this.render();
         },
         render: function() {            
-            _node.boundingBox.addClass('te-boundingBox');
-            _node.boundingBox.css('overflow', "hidden");
-            _node.boundingBox.html('');
-            _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
-            _node.slider.append(_node.images);
-            _node.slider.css("width", manager.canvas.width * manager.listLength);
-            _node.slider.find("img").css("display", "inline").css("visibility", "visible");
+            _node.boundingBox
+                .addClass('te-boundingBox')
+                .css('overflow', "hidden")
+                .html('');
+            _node.slider = $('<div class="te-slider te-transition"><!-- --></div>')
+                .appendTo(_node.boundingBox);
+            _node.slider
+                .append(_node.images)
+                .css("width", manager.canvas.width * manager.listLength)
+                .find("img").find("img").css({
+                    "display": "inline",
+                    "visibility": "visible"
+                });   
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
@@ -236,11 +242,7 @@ $.tEffects.HorizontalScroll = function(manager) {
             });
         },
         applyCss: function(index, callback) {
-            var command = "translate(-" + (index * manager.canvas.width) + "px, 0)";
-            _node.slider.css("transform", command)
-                .css("-moz-transform", command)
-                .css("-webkit-transform", command)
-                .css("-o-transform", command);
+            _node.slider.css3("transform", "translate(-" + (index * manager.canvas.width) + "px, 0)");
         },
         applyJs: function(index, callback) {
              var initX = manager.index * manager.canvas.width, 
@@ -265,13 +267,17 @@ $.tEffects.VerticalScroll = function(manager) {
             this.render();
         },
         render: function() {            
-            _node.boundingBox.addClass('te-boundingBox');
-            _node.boundingBox.css('overflow', "hidden");
-            _node.boundingBox.html('');
+            _node.boundingBox
+                .addClass('te-boundingBox')
+                .css('overflow', "hidden")
+                .html('');
             _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
-            _node.slider.append(_node.images);
-            _node.slider.css("height", manager.canvas.height * manager.listLength);
-            _node.slider.find("img").css("display", "block").css("visibility", "visible");
+            _node.slider.append(_node.images)
+                .css("height", manager.canvas.height * manager.listLength)
+                .find("img").css({
+                    "display": "block",
+                    "visibility": "visible"
+                });                
         },
         apply: function(index) {
             var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
@@ -280,11 +286,7 @@ $.tEffects.VerticalScroll = function(manager) {
             });
         },
         applyCss: function(index, callback) {
-            var command = "translateY(-" + (index * manager.canvas.height) + "px)";
-            _node.slider.css("transform", command)
-                .css("-moz-transform", command)
-                .css("-webkit-transform", command)
-                .css("-o-transform", command);
+            _node.slider.css3("transform", "translateY(-" + (index * manager.canvas.height) + "px)");
         },
         applyJs: function(index, callback) {
              var initY = manager.index * manager.canvas.height, 
@@ -296,7 +298,7 @@ $.tEffects.VerticalScroll = function(manager) {
                 },
                 completedCallback: callback,
                 iterations: 10,
-                delay: 50,
+                delay: manager.delay,
                 scope: this}).run();
         }
     }
