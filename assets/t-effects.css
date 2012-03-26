@@ -1,4 +1,4 @@
-/* 
+/*
     Document   : t-effects
     Created on : 01-Feb-2012, 11:04:19
     Author     : Dmitry Sheiko
@@ -6,7 +6,7 @@
         Supports transittional effect library with stylesheets.
 */
 
-.te-transition {   
+.te-transition {
  -webkit-transition: all 1s ease-in-out;
   -moz-transition: all 1s ease-in-out;
    -o-transition: all 1s ease-in-out;
@@ -28,7 +28,7 @@
 .te-horizontal-linear-grid,
 .te-vertical-linear-grid {
     overflow: hidden;
-    vertical-align: bottom;    
+    vertical-align: bottom;
 }
 .te-grid {
     display: none;
@@ -37,11 +37,12 @@
 .te-vertical-linear-grid .te-grid > div {
     display: inline-block;
     float: left;
-    background-repeat: no-repeat;    
+    background-repeat: no-repeat;
 }
 .te-horizontal-linear-grid .te-grid > div {
     display: block;
     background-repeat: no-repeat;
+    position: relative;
 }
 
 .te-opacity-min {

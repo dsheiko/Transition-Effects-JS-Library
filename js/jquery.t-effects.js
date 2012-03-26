@@ -1,5 +1,5 @@
 /*
-* Slider Transition Effects with CSS3 Shim 
+* Slider Transition Effects with CSS3 Shim
 *
 * @package tEffects
 * @author $Author: sheiko $
@@ -9,7 +9,7 @@
 */
 (function( $ ) {
 
-var NEXT = "next", PREV = "prev", VERTICAL = "vartical", HORIZONTAL = "horizontal";
+var NEXT = "next", PREV = "prev", VERTICAL = "vertical", HORIZONTAL = "horizontal";
 
 Util = {
     ucfirst : function(str) {
@@ -23,17 +23,17 @@ Util = {
             || ('O' + _prop) in document.body.style
             || ('Ms' + _prop) in document.body.style
             || prop in document.body.style);
-    }      
+    }
 }
 
 $.fn.css3 = function(prop, val) {
     var map = {};
-    map[prop] = 
-    map['-moz-' + prop] = 
-    map['-ms-' + prop] = 
-    map['-o-' + prop] = 
+    map[prop] =
+    map['-moz-' + prop] =
+    map['-ms-' + prop] =
+    map['-o-' + prop] =
     map['-webkit-' + prop] = val;
-    return $(this).css(map); 
+    return $(this).css(map);
 }
 
 $.tEffects = function(settings) {
@@ -70,11 +70,11 @@ $.tEffects = function(settings) {
                 this.cols = settings.cols || this.cols;
                 this.rows = settings.rows || this.rows;
                 this.direction = settings.direction || this.direction;
-                
-                this.checkEntryConditions();                
+
+                this.checkEntryConditions();
                 this.render(function() {
                     this.driver = new $.tEffects[settings.effect](this);
-                    this.driver.init();                    
+                    this.driver.init();
                     this.syncUI();
                 });
             },
@@ -86,7 +86,7 @@ $.tEffects = function(settings) {
                     throw "Given effect function not found";
                 }
             },
-            render : function(callback) {                   
+            render : function(callback) {
                    this.updateTriggersState();
                    // Workaround for image load event binding with IE bug
                    $(this.node.images[0]).attr('src', function(i, val) {
@@ -102,29 +102,29 @@ $.tEffects = function(settings) {
                                ? $(this).width()  // Horizontal transition
                                : Math.ceil($(this).width() / manager.cols), // Vertical one
                            'height' : manager.direction === HORIZONTAL
-                               ? Math.ceil($(this).height() / manager.rows) 
+                               ? Math.ceil($(this).height() / manager.rows)
                                : $(this).height()
                        };
                        manager.node.boundingBox.css({
                            "width": manager.canvas.width,
                            "height": manager.canvas.height
-                       });                       
+                       });
                        if (manager.driver === null) {
                             callback.apply(manager, arguments);
                        }
                    });
-                   
+
             },
             isset : function(val) {
                 return (typeof val !== "undefined");
             },
             updateTriggersState: function() {
                 if (this.isset(settings.triggerNext)) {
-                    $(settings.triggerNext.node)[(this.getImage(NEXT).length 
+                    $(settings.triggerNext.node)[(this.getImage(NEXT).length
                             ? "removeClass" : "addClass")]("te-trigger-inactive");
                 }
-                if (this.isset(settings.triggerPrev)) {                    
-                    $(settings.triggerPrev.node)[(this.getImage(PREV).length 
+                if (this.isset(settings.triggerPrev)) {
+                    $(settings.triggerPrev.node)[(this.getImage(PREV).length
                             ? "removeClass" : "addClass")]("te-trigger-inactive");
                 }
             },
@@ -133,7 +133,7 @@ $.tEffects = function(settings) {
                 if (typeof this[method] !== "undefined") {
                     this[method](index, function(){
                         $(document).trigger('apply.t-effect', [index]);
-                    });    
+                    });
                 }
             },
             syncUI : function() {
@@ -141,8 +141,8 @@ $.tEffects = function(settings) {
                     $(settings.triggerNext.node).bind(settings.triggerNext.event, this, function(e) {
                         e.preventDefault();
                         if ($(this).hasClass("te-trigger-inactive")) { return false; }
-                        var manager = e.data;                        
-                        manager.invoke.apply(manager.driver, [manager.index + 1]);                   
+                        var manager = e.data;
+                        manager.invoke.apply(manager.driver, [manager.index + 1]);
                         manager.index ++;
                         manager.updateTriggersState();
                     });
@@ -168,8 +168,8 @@ $.tEffects = function(settings) {
                         default:
                             throw "Insufficient key";
                     }
-                }                
-                return $(this.node.images[typeof key !== "undefined" ? key : this.index]);                
+                }
+                return $(this.node.images[typeof key !== "undefined" ? key : this.index]);
             },
             getLinearGrid: function() {
                 var html = '<div class="te-grid">';
@@ -177,7 +177,7 @@ $.tEffects = function(settings) {
                     html += '<div><!-- --></div>';
                 }
                 return html + '</div>';
-            }            
+            }
         }
     }
     _manager.init();
@@ -190,21 +190,21 @@ $.tEffects.FadeInOut = function(manager) {
             this.manager = manager;
             this.render();
         },
-        render: function() {            
+        render: function() {
             _node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')')
                 .addClass('te-boundingBox')
                 .css3('transition-duration', manager.duration + "s");
             _node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
                 .appendTo(_node.boundingBox);
-        },        
-        applyCss: function(index, callback) {            
-            var isSolid = _node.overlay.css('opacity'), 
+        },
+        applyCss: function(index, callback) {
+            var isSolid = _node.overlay.css('opacity'),
                 img = manager.getImage(index);
-                
+
             if (isSolid === "0") {
-                _node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');                 
+                _node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');
             } else {
-                _node.boundingBox.css('backgroundImage', 'url(' + img.attr('src') + ')');           
+                _node.boundingBox.css('backgroundImage', 'url(' + img.attr('src') + ')');
             }
             _node.overlay.css('opacity', (isSolid === "0") ? '1.0' : '0');
             window.setTimeout(callback, manager.duration * 1000);
@@ -215,7 +215,7 @@ $.tEffects.FadeInOut = function(manager) {
             _node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');
             _node.overlay.fadeIn('slow', function() {
                 _node.boundingBox.css('backgroundImage', 'url(' + img.attr('src')  + ')');
-                callback(); 
+                callback();
             });
         }
     }
@@ -228,7 +228,7 @@ $.tEffects.Scroll = function(manager) {
             this.isHorizontal = (manager.direction === HORIZONTAL);
             this.render();
         },
-        render: function() {            
+        render: function() {
             _node.boundingBox
                 .addClass('te-boundingBox')
                 .css('overflow', "hidden")
@@ -242,24 +242,24 @@ $.tEffects.Scroll = function(manager) {
                 .find("img").css({
                     "display": (this.isHorizontal ? "inline" : "block"),
                     "visibility": "visible"
-                });   
+                });
         },
         applyCss: function(index, callback) {
-            _node.slider.css3("transform", "translate" + (this.isHorizontal 
-                ? "X" : "Y") + "(-" + (index * (this.isHorizontal 
+            _node.slider.css3("transform", "translate" + (this.isHorizontal
+                ? "X" : "Y") + "(-" + (index * (this.isHorizontal
                 ? manager.canvas.width : manager.canvas.height)) + "px)");
             window.setTimeout(callback, manager.duration * 1000);
         },
         applyJs: function(index, callback) {
-             var initX = manager.index * manager.canvas.width, 
+             var initX = manager.index * manager.canvas.width,
                  offsetX = (index * manager.canvas.width - initX),
-                 initY = manager.index * manager.canvas.height, 
+                 initY = manager.index * manager.canvas.height,
                  offsetY = (index * manager.canvas.height - initY),
                  isHorizontal = this.isHorizontal;
-                 
+
              $.aQueue.add({
                 startedCallback: function(){},
-                iteratedCallback: function(i){                    
+                iteratedCallback: function(i){
                     if (isHorizontal) {
                         _node.boundingBox.scrollLeft(initX + Math.ceil(offsetX / 10 * i));
                     } else {
@@ -279,7 +279,7 @@ $.tEffects.Ladder = function(manager) {
     var _node = manager.node;
     return {
         init: function() {
-            this.isHorizontal = (manager.direction === HORIZONTAL);            
+            this.isHorizontal = (manager.direction === HORIZONTAL);
             this.render();
             var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
             this[method]();
@@ -288,19 +288,19 @@ $.tEffects.Ladder = function(manager) {
             _node.boundingBox.css('backgroundImage', 'url(' + manager.getImage().attr('src') + ')')
                 .addClass('te-boundingBox')
                 .html('');
-                
-            _node.overlay = $('<div class="te-overlay te-' 
+
+            _node.overlay = $('<div class="te-overlay te-'
                 + (this.isHorizontal ? 'horizontal' : 'vertical')
                 + '-linear-grid te-odd">' + manager.getLinearGrid() + '</div>')
-                .appendTo(_node.boundingBox);            
+                .appendTo(_node.boundingBox);
             _node.ceils = _node.overlay.find('div.te-grid > div');
-                        
+
             // Ceils wrapper guarantees that when column width * columns number != overlay width
             // columns are still in line
             _node.overlay.find('div.te-grid').css({
                 "width": manager.ceil.width * manager.cols,
                 "display": "block"
-            });                        
+            });
         },
         renderCss: function() {
             var offset = 0, delay = 0, isHorizontal = this.isHorizontal
@@ -309,13 +309,13 @@ $.tEffects.Ladder = function(manager) {
                 'height' : isHorizontal ? manager.ceil.height : 0
                 })
                 .addClass('te-transition')
-                .css3('transition-duration', manager.duration + "s")                
+                .css3('transition-duration', manager.duration + "s")
                 .each(function(){
                     $(this).css({
                         'backgroundImage': 'url(' + manager.getImage().attr('src') + ')',
-                        'backgroundPosition': (isHorizontal 
+                        'backgroundPosition': (isHorizontal
                             ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
-                        'backgroundRepeat': 'no-repeat'                          
+                        'backgroundRepeat': 'no-repeat'
                     }).css3('transition-delay', delay + 'ms')
                     delay += manager.delay;
                     offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
@@ -324,23 +324,23 @@ $.tEffects.Ladder = function(manager) {
         renderJs: function() {
             _node.ceils.css({
                 'width': manager.ceil.width,
-                'height' : manager.canvas.height
+                'height' : manager.ceil.height
             });
-        },        
+        },
         applyCss: function(index, callback) {
             var isOdd = _node.overlay.hasClass("te-odd"),
             origImg = manager.getImage(), newImg = manager.getImage(index);
-            
-            _node.boundingBox.css('backgroundImage', 
+
+            _node.boundingBox.css('backgroundImage',
                 'url(' + (isOdd ? origImg.attr('src') : newImg.attr('src')) + ')');
             _node.ceils.css({
-                  'backgroundImage': 'url(' + 
+                  'backgroundImage': 'url(' +
                       (!isOdd ? origImg.attr('src') : newImg.attr('src'))  + ')'
             });
             // Make the transition
             if (this.isHorizontal) {
                 _node.ceils.css("width", (isOdd ? manager.canvas.width : "1px"));
-            } else {                
+            } else {
                 _node.ceils.css("height", (isOdd ? manager.canvas.height : "1px"));
             }
             _node.overlay.toggleClass("te-odd");
@@ -356,23 +356,34 @@ $.tEffects.Ladder = function(manager) {
                     _node.ceils.each(function(){
                         $(this).css({
                             'backgroundImage': 'url(' + newImg.attr('src') + ')',
-                            'backgroundPosition': offset + 'px ' + manager.canvas.height + 'px',
-                            'backgroundRepeat': 'no-repeat'                          
+                            'backgroundPosition': (isHorizontal
+                                ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
+                            'backgroundRepeat': 'no-repeat'
                         });
-                        offset -= manager.ceil.width;                
+                        offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
                     });
                 },
                 iteratedCallback: function(i){                    
-                    var offsetFading = 0, offsetX = 0, offsetY = 0, 
-                        factor = Math.ceil(manager.canvas.height / manager.cols);
-                    
+                    var offsetFading = 0, offsetX = 0, offsetY = 0,
+                        factor = isHorizontal 
+                            ? Math.ceil(manager.canvas.width / manager.rows)
+                            : Math.ceil(manager.canvas.height / manager.cols);
+//@TODO: try to move bacground from the -width to 0
                     _node.ceils.each(function(){
-                        offsetY = (manager.canvas.height - (i * factor) - offsetFading);
-                        $(this).css('backgroundPosition', offsetX + 'px ' 
-                            + (offsetY < 0 ? 0 : offsetY) + 'px');    
-                        offsetX -= manager.ceil.width;
-                        offsetFading += factor;
-                    });                    
+                        if (isHorizontal) {
+                            offsetX = (manager.canvas.width - (i * factor) - offsetFading);
+                            $(this).css('backgroundPosition', (offsetX < 0 ? 0 : offsetX) + 'px '
+                                + offsetY + 'px');
+                            offsetY -= manager.ceil.height;
+                            offsetFading += factor;
+                        } else {                            
+                            offsetY = (manager.canvas.height - (i * factor) - offsetFading);
+                            $(this).css('backgroundPosition', offsetX + 'px '
+                                + (offsetY < 0 ? 0 : offsetY) + 'px');
+                            offsetX -= manager.ceil.width;
+                            offsetFading += factor;
+                        }                        
+                    });
                 },
                 completedCallback: callback,
                 iterations: (isHorizontal ? manager.rows : manager.cols),
@@ -381,5 +392,132 @@ $.tEffects.Ladder = function(manager) {
         }
     }
 }
+
+
+$.tEffects.Jalousie = function(manager) {
+    var _node = manager.node;
+    return {
+        init: function() {
+            this.isHorizontal = (manager.direction === HORIZONTAL);
+            this.render();
+            var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
+            this[method]();
+        },
+        render: function() {
+            _node.boundingBox.css('backgroundImage', 'url(' + manager.getImage().attr('src') + ')')
+                .addClass('te-boundingBox')
+                .html('');
+
+            _node.overlay = $('<div class="te-overlay te-'
+                + (this.isHorizontal ? 'horizontal' : 'vertical')
+                + '-linear-grid te-odd">' + manager.getLinearGrid() + '</div>')
+                .appendTo(_node.boundingBox);
+            _node.ceils = _node.overlay.find('div.te-grid > div');
+
+            _node.overlay.find('div.te-grid').css({
+                "width": (this.isHorizontal ? manager.canvas.width : (manager.ceil.width * manager.cols) + manager.ceil.width),
+                "height": (this.isHorizontal ? (manager.ceil.height * manager.rowss) + manager.ceil.height: manager.canvas.height),
+                "display": "block"
+            });
+        },
+        renderCss: function() {
+            var offset = 0, isHorizontal = this.isHorizontal
+
+            _node.ceils.css({
+                'width': manager.ceil.width,
+                'height' : manager.ceil.height
+                })
+                .addClass('te-transition')
+                .css3('transition-duration', manager.duration + "s")
+                .each(function(){
+                    $(this).css({
+                        'backgroundImage': 'url(' + manager.getImage().attr('src') + ')',
+                        'backgroundPosition': (isHorizontal
+                            ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
+                        'backgroundRepeat': 'no-repeat'
+                    });
+                    offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
+            });
+
+        },
+        renderJs: function() {
+            _node.ceils.css(this.isHorizontal
+            ? {
+                'margin-top': manager.ceil.height + "px",
+                'width': manager.canvas.width,
+                'height' : "0px"
+            } : {
+                'margin-left': manager.ceil.width + "px",
+                'width': "0px",
+                'height' : manager.canvas.height
+            }
+            );
+        },
+        applyCss: function(index, callback) {
+            var isOdd = _node.overlay.hasClass("te-odd"),
+            origImg = manager.getImage(), newImg = manager.getImage(index);
+
+            _node.boundingBox.css('backgroundImage',
+                'url(' + (isOdd ? newImg.attr('src') : origImg.attr('src')) + ')');
+            _node.ceils.css({
+                  'backgroundImage': 'url(' +
+                      (!isOdd ? newImg.attr('src') : origImg.attr('src'))  + ')'
+            });
+
+            // Make the transition
+            if (this.isHorizontal) {
+                _node.ceils.css3("transform", "scaleY(" + (isOdd ? 0 : 1) + ")");
+            } else {
+                _node.ceils.css3("transform", "scaleX(" + (isOdd ? 0 : 1) + ")");
+            }
+
+            _node.overlay.toggleClass("te-odd");
+            window.setTimeout(callback, manager.duration * 1000);
+        },
+        applyJs: function(index, callback) {
+             var origImg = manager.getImage(), newImg = manager.getImage(index),
+             isHorizontal = this.isHorizontal;
+             $.aQueue.add({
+                startedCallback: function(){
+                    var offset = 0;
+                    _node.boundingBox.css('backgroundImage', 'url(' + origImg.attr('src') + ')');
+                    _node.ceils.each(function(){
+                        $(this).css({
+                            'backgroundImage': 'url(' + newImg.attr('src') + ')',
+                            'backgroundPosition': (isHorizontal
+                                ? '0px ' + offset + 'px' :
+                                offset + 'px 0px'
+                                ),
+                            'backgroundRepeat': 'no-repeat'
+                        });
+                        offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
+                    });
+                },
+                iteratedCallback: function(i){
+                    var progress = isHorizontal
+                        ? Math.ceil(i * manager.ceil.height / manager.rows)
+                        : Math.ceil(i * manager.ceil.width / manager.cols);
+
+                    _node.ceils.each(function(){
+                        $(this).css(
+                        isHorizontal
+                        ? {
+                            "height": (progress) + "px",
+                            "margin": (manager.ceil.height - progress)  + "px 0px 0px 0px"
+                        }
+                        : {
+                            "width": (progress) + "px",
+                            "margin": "0px 0px 0px " + (manager.ceil.width - progress)  + "px"
+                        });
+                    });
+                },
+                completedCallback: callback,
+                iterations: (isHorizontal ? manager.rows : manager.cols),
+                delay: manager.delay,
+                scope: this}).run();
+        }
+    }
+}
+
 
 })( jQuery );
