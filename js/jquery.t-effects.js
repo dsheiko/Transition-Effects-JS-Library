@@ -1,9 +1,9 @@
 /*
-* HTML5 Form Shim
+* Slider Transition Effects with CSS3 Shim 
 *
-* @package HTML5 Form Shim
+* @package tEffects
 * @author $Author: sheiko $
-* @version $Id: jquery.html5form.js, v 0.9 $
+* @version $Id: jquery.t-effects.js, v 0.9 $
 * @license GNU
 * @copyright (c) Dmitry Sheiko http://www.dsheiko.com
 */
@@ -104,7 +104,7 @@ $.tEffects = function(settings) {
                            'height' : manager.direction === HORIZONTAL
                                ? Math.ceil($(this).height() / manager.rows) 
                                : $(this).height()
-                       }                       
+                       };
                        manager.node.boundingBox.css({
                            "width": manager.canvas.width,
                            "height": manager.canvas.height
@@ -120,10 +120,20 @@ $.tEffects = function(settings) {
             },
             updateTriggersState: function() {
                 if (this.isset(settings.triggerNext)) {
-                    $(settings.triggerNext.node)[(this.getImage(NEXT).length ? "removeClass" : "addClass")]("te-trigger-inactive");
+                    $(settings.triggerNext.node)[(this.getImage(NEXT).length 
+                            ? "removeClass" : "addClass")]("te-trigger-inactive");
                 }
                 if (this.isset(settings.triggerPrev)) {                    
-                    $(settings.triggerPrev.node)[(this.getImage(PREV).length ? "removeClass" : "addClass")]("te-trigger-inactive");
+                    $(settings.triggerPrev.node)[(this.getImage(PREV).length 
+                            ? "removeClass" : "addClass")]("te-trigger-inactive");
+                }
+            },
+            invoke: function(index) {
+                var method = "apply" + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
+                if (typeof this[method] !== "undefined") {
+                    this[method](index, function(){
+                        $(document).trigger('apply.t-effect', [index]);
+                    });    
                 }
             },
             syncUI : function() {
@@ -132,7 +142,7 @@ $.tEffects = function(settings) {
                         e.preventDefault();
                         if ($(this).hasClass("te-trigger-inactive")) { return false; }
                         var manager = e.data;                        
-                        manager.driver.apply(manager.index + 1);
+                        manager.invoke.apply(manager.driver, [manager.index + 1]);                   
                         manager.index ++;
                         manager.updateTriggersState();
                     });
@@ -142,7 +152,7 @@ $.tEffects = function(settings) {
                         e.preventDefault();
                         if ($(this).hasClass("te-trigger-inactive")) { return false; }
                         var manager = e.data;
-                        manager.driver.apply(manager.index - 1);
+                        manager.invoke.apply(manager.driver, [manager.index - 1]);
                         manager.index --;
                         manager.updateTriggersState();
                     });
@@ -167,7 +177,7 @@ $.tEffects = function(settings) {
                     html += '<div><!-- --></div>';
                 }
                 return html + '</div>';
-            }
+            }            
         }
     }
     _manager.init();
@@ -181,133 +191,95 @@ $.tEffects.FadeInOut = function(manager) {
             this.render();
         },
         render: function() {            
-            _node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')');
-            _node.boundingBox.addClass('te-boundingBox');
+            _node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')')
+                .addClass('te-boundingBox')
+                .css3('transition-duration', manager.duration + "s");
             _node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
                 .appendTo(_node.boundingBox);
-        },
-        apply: function(index) {
-            var img = manager.getImage(index);
-            var method = 'apply' + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
-            this[method](img, function(){
-                $(document).trigger('apply.t-effect', [img]);
-            });
-        },
-        applyCss: function(img2, callback) {            
-            var isSolid = _node.overlay.css('opacity');
+        },        
+        applyCss: function(index, callback) {            
+            var isSolid = _node.overlay.css('opacity'), 
+                img = manager.getImage(index);
+                
             if (isSolid === "0") {
-                _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');                 
+                _node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');                 
             } else {
-                _node.boundingBox.css('backgroundImage', 'url(' + img2.attr('src') + ')');           
+                _node.boundingBox.css('backgroundImage', 'url(' + img.attr('src') + ')');           
             }
             _node.overlay.css('opacity', (isSolid === "0") ? '1.0' : '0');
-            callback();
+            window.setTimeout(callback, manager.duration * 1000);
         },
-        applyJs: function(img2, callback) {            
+        applyJs: function(index, callback) {
+            var img = manager.getImage(index);
             _node.overlay.hide();
-            _node.overlay.css('backgroundImage', 'url(' + img2.attr('src') + ')');
+            _node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');
             _node.overlay.fadeIn('slow', function() {
-                _node.boundingBox.css('backgroundImage', 'url(' + img2.attr('src')  + ')');
+                _node.boundingBox.css('backgroundImage', 'url(' + img.attr('src')  + ')');
                 callback(); 
             });
         }
     }
 }
 
-$.tEffects.HorizontalScroll = function(manager) {
+$.tEffects.Scroll = function(manager) {
     var _node = manager.node;
     return {
         init: function() {
+            this.isHorizontal = (manager.direction === HORIZONTAL);
             this.render();
         },
         render: function() {            
             _node.boundingBox
                 .addClass('te-boundingBox')
                 .css('overflow', "hidden")
+                .css3('transition-duration', manager.duration + "s")
                 .html('');
             _node.slider = $('<div class="te-slider te-transition"><!-- --></div>')
                 .appendTo(_node.boundingBox);
             _node.slider
                 .append(_node.images)
                 .css("width", manager.canvas.width * manager.listLength)
-                .find("img").find("img").css({
-                    "display": "inline",
+                .find("img").css({
+                    "display": (this.isHorizontal ? "inline" : "block"),
                     "visibility": "visible"
                 });   
         },
-        apply: function(index) {
-            var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
-            this[method](index, function(){
-                $(document).trigger('apply.t-effect', [index]);
-            });
-        },
         applyCss: function(index, callback) {
-            _node.slider.css3("transform", "translate(-" + (index * manager.canvas.width) + "px, 0)");
+            _node.slider.css3("transform", "translate" + (this.isHorizontal 
+                ? "X" : "Y") + "(-" + (index * (this.isHorizontal 
+                ? manager.canvas.width : manager.canvas.height)) + "px)");
+            window.setTimeout(callback, manager.duration * 1000);
         },
         applyJs: function(index, callback) {
              var initX = manager.index * manager.canvas.width, 
-                 offset = (index * manager.canvas.width - initX);
+                 offsetX = (index * manager.canvas.width - initX),
+                 initY = manager.index * manager.canvas.height, 
+                 offsetY = (index * manager.canvas.height - initY),
+                 isHorizontal = this.isHorizontal;
+                 
              $.aQueue.add({
                 startedCallback: function(){},
                 iteratedCallback: function(i){                    
-                    _node.boundingBox.scrollLeft(initX + Math.ceil(offset / 10 * i));
+                    if (isHorizontal) {
+                        _node.boundingBox.scrollLeft(initX + Math.ceil(offsetX / 10 * i));
+                    } else {
+                        _node.boundingBox.scrollTop(initY + Math.ceil(offsetY / 10 * i));
+                    }
                 },
                 completedCallback: callback,
-                iterations: 10,
-                delay: 50,
-                scope: this}).run();
-        }
-    }
-}
-
-$.tEffects.VerticalScroll = function(manager) {
-    var _node = manager.node;
-    return {
-        init: function() {
-            this.render();
-        },
-        render: function() {            
-            _node.boundingBox
-                .addClass('te-boundingBox')
-                .css('overflow', "hidden")
-                .html('');
-            _node.slider = $('<div class="te-slider te-transition"><!-- --></div>').appendTo(_node.boundingBox);
-            _node.slider.append(_node.images)
-                .css("height", manager.canvas.height * manager.listLength)
-                .find("img").css({
-                    "display": "block",
-                    "visibility": "visible"
-                });                
-        },
-        apply: function(index) {
-            var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
-            this[method](index, function(){
-                $(document).trigger('apply.t-effect', [index]);
-            });
-        },
-        applyCss: function(index, callback) {
-            _node.slider.css3("transform", "translateY(-" + (index * manager.canvas.height) + "px)");
-        },
-        applyJs: function(index, callback) {
-             var initY = manager.index * manager.canvas.height, 
-                 offset = (index * manager.canvas.height - initY);
-             $.aQueue.add({
-                startedCallback: function(){},
-                iteratedCallback: function(i){                    
-                    _node.boundingBox.scrollTop(initY + Math.ceil(offset / 10 * i));
-                },
-                completedCallback: callback,
-                iterations: 10,
+                iterations: (isHorizontal ? manager.rows : manager.cols),
                 delay: manager.delay,
                 scope: this}).run();
         }
     }
 }
 
+
 $.tEffects.Ladder = function(manager) {
     var _node = manager.node;
     return {
         init: function() {
+            this.isHorizontal = (manager.direction === HORIZONTAL);            
             this.render();
             var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
             this[method]();
@@ -318,7 +290,7 @@ $.tEffects.Ladder = function(manager) {
                 .html('');
                 
             _node.overlay = $('<div class="te-overlay te-' 
-                + (manager.direction === HORIZONTAL ? 'horizontal' : 'vertical')
+                + (this.isHorizontal ? 'horizontal' : 'vertical')
                 + '-linear-grid te-odd">' + manager.getLinearGrid() + '</div>')
                 .appendTo(_node.boundingBox);            
             _node.ceils = _node.overlay.find('div.te-grid > div');
@@ -331,22 +303,22 @@ $.tEffects.Ladder = function(manager) {
             });                        
         },
         renderCss: function() {
-            var offset = 0, delay = 0;
-            
+            var offset = 0, delay = 0, isHorizontal = this.isHorizontal
             _node.ceils.css({
-                'width': manager.ceil.width,
-                'height' : 0
+                'width': isHorizontal ? 0 : manager.ceil.width,
+                'height' : isHorizontal ? manager.ceil.height : 0
                 })
                 .addClass('te-transition')
                 .css3('transition-duration', manager.duration + "s")                
                 .each(function(){
                     $(this).css({
                         'backgroundImage': 'url(' + manager.getImage().attr('src') + ')',
-                        'backgroundPosition': offset + 'px 0px',
+                        'backgroundPosition': (isHorizontal 
+                            ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
                         'backgroundRepeat': 'no-repeat'                          
                     }).css3('transition-delay', delay + 'ms')
                     delay += manager.delay;
-                    offset -= manager.ceil.width;
+                    offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
             });
         },
         renderJs: function() {
@@ -354,29 +326,29 @@ $.tEffects.Ladder = function(manager) {
                 'width': manager.ceil.width,
                 'height' : manager.canvas.height
             });
-        },
-        apply: function(index) {
-            var method = 'apply' + (Util.isPropertySupported('transform') ? 'Css' : 'Js'),
+        },        
+        applyCss: function(index, callback) {
+            var isOdd = _node.overlay.hasClass("te-odd"),
             origImg = manager.getImage(), newImg = manager.getImage(index);
-            this[method](origImg, newImg, function(){
-                $(document).trigger('apply.t-effect', [index]);
-            });
-        },
-        applyCss: function(origImg, newImg, callback) {
-            var isOdd = _node.overlay.hasClass("te-odd");              
+            
             _node.boundingBox.css('backgroundImage', 
                 'url(' + (isOdd ? origImg.attr('src') : newImg.attr('src')) + ')');
             _node.ceils.css({
                   'backgroundImage': 'url(' + 
-                      (!isOdd ? origImg.attr('src') : newImg.attr('src'))  + ')',
-                  'height': 0
+                      (!isOdd ? origImg.attr('src') : newImg.attr('src'))  + ')'
             });
             // Make the transition
-            _node.ceils.css("height", (isOdd ? manager.canvas.height : "1px"));
+            if (this.isHorizontal) {
+                _node.ceils.css("width", (isOdd ? manager.canvas.width : "1px"));
+            } else {                
+                _node.ceils.css("height", (isOdd ? manager.canvas.height : "1px"));
+            }
             _node.overlay.toggleClass("te-odd");
             window.setTimeout(callback, manager.duration * 1000);
         },
-        applyJs: function(origImg, newImg, callback) {
+        applyJs: function(index, callback) {
+             var origImg = manager.getImage(), newImg = manager.getImage(index),
+             isHorizontal = this.isHorizontal;
              $.aQueue.add({
                 startedCallback: function(){
                     var offset = 0;
@@ -403,7 +375,7 @@ $.tEffects.Ladder = function(manager) {
                     });                    
                 },
                 completedCallback: callback,
-                iterations: manager.cols,
+                iterations: (isHorizontal ? manager.rows : manager.cols),
                 delay: manager.delay,
                 scope: this}).run();
         }

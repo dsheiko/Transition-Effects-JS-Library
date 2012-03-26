@@ -25,6 +25,7 @@
     right: 0;
     bottom: 0;
 }
+.te-horizontal-linear-grid,
 .te-vertical-linear-grid {
     overflow: hidden;
     vertical-align: bottom;    
@@ -37,6 +38,10 @@
     display: inline-block;
     float: left;
     background-repeat: no-repeat;    
+}
+.te-horizontal-linear-grid .te-grid > div {
+    display: block;
+    background-repeat: no-repeat;
 }
 
 .te-opacity-min {
