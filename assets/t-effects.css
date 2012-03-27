@@ -37,7 +37,7 @@
 .te-vertical-linear-grid .te-grid > div {
     display: inline-block;
     float: left;
-    background-repeat: no-repeat;
+    background-repeat: no-repeat;     
 }
 .te-horizontal-linear-grid .te-grid > div {
     display: block;

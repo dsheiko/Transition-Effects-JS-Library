@@ -9,7 +9,8 @@
 */
 (function( $ ) {
 
-var NEXT = "next", PREV = "prev", VERTICAL = "vertical", HORIZONTAL = "horizontal";
+var NEXT = "next", PREV = "prev", VERTICAL = "vertical", HORIZONTAL = "horizontal", 
+    DEFAULT = 'default';
 
 Util = {
     ucfirst : function(str) {
@@ -37,6 +38,7 @@ $.fn.css3 = function(prop, val) {
 }
 
 $.tEffects = function(settings) {
+    // Obtain an instance of the manager
     var _manager = new function() {
         return {
             node : {
@@ -62,21 +64,30 @@ $.tEffects = function(settings) {
             cols: 10,
             rows: 10,
             direction: VERTICAL,
+            settings: {
+                effect: null,
+                triggerNext : function(){},
+                triggerPrev : function(){},
+                transitionDuration : 1, // sec
+                transitionDelay : 50, // ms
+                cols: 10,
+                rows: 10,
+                dimension: 10,
+                method: DEFAULT // can be random, diagonal (for now used only on Matrix)
+            },
             init: function() {
                 this.listLength = this.node.images.length;
                 // Settings
-                this.duration = settings.transitionDuration || this.duration;
-                this.delay = settings.transitionDelay || this.delay;
-                this.cols = settings.cols || this.cols;
-                this.rows = settings.rows || this.rows;
-                this.direction = settings.direction || this.direction;
-
+                $.extend(this.settings, settings);
                 this.checkEntryConditions();
-                this.render(function() {
+                this.updateTriggersState();
+                // Driver will be available as soon as the first image of the prpvided list loaded 
+                this.render(function(){
+                    // Obtain an instance of driver
                     this.driver = new $.tEffects[settings.effect](this);
                     this.driver.init();
                     this.syncUI();
-                });
+                });                
             },
             checkEntryConditions: function() {
                 if (!this.listLength) {
@@ -86,25 +97,18 @@ $.tEffects = function(settings) {
                     throw "Given effect function not found";
                 }
             },
-            render : function(callback) {
-                   this.updateTriggersState();
+            render : function(callback) {                   
                    // Workaround for image load event binding with IE bug
                    $(this.node.images[0]).attr('src', function(i, val) {
                       return val + "?v=" + (new Date()).getTime()
                     }).bind("load", this, function(e){
                        var manager = e.data;
+                       // Now since we know the real size of the image (that is supposed 
+                       // to be size of every enlisted image), we can specify relative vars.
                        manager.canvas = {
                            'width' : $(this).width(),
                            'height': $(this).height()
-                       };
-                       manager.ceil = {
-                           'width' : manager.direction === HORIZONTAL
-                               ? $(this).width()  // Horizontal transition
-                               : Math.ceil($(this).width() / manager.cols), // Vertical one
-                           'height' : manager.direction === HORIZONTAL
-                               ? Math.ceil($(this).height() / manager.rows)
-                               : $(this).height()
-                       };
+                       };                       
                        manager.node.boundingBox.css({
                            "width": manager.canvas.width,
                            "height": manager.canvas.height
@@ -173,7 +177,16 @@ $.tEffects = function(settings) {
             },
             getLinearGrid: function() {
                 var html = '<div class="te-grid">';
-                for (var i = 0; i < this.cols; i++) {
+                for (var i = 0, limit = (this.settings.direction === HORIZONTAL 
+                    ? this.settings.rows : this.settings.cols); i < limit; i++) {
+                    html += '<div><!-- --></div>';
+                }
+                return html + '</div>';
+            },
+            getMatrixGrid: function() {
+                var html = '<div class="te-grid">';
+                for (var i = 0, limit = (this.settings.dimension * this.settings.dimension); 
+                    i < limit; i++) {
                     html += '<div><!-- --></div>';
                 }
                 return html + '</div>';
@@ -192,10 +205,12 @@ $.tEffects.FadeInOut = function(manager) {
         },
         render: function() {
             _node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')')
-                .addClass('te-boundingBox')
-                .css3('transition-duration', manager.duration + "s");
+                .addClass('te-boundingBox');
             _node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
                 .appendTo(_node.boundingBox);
+            _node.overlay
+                .css3('transition-duration', manager.settings.transitionDuration + "s")
+                .css3('transition-property', "opacity")
         },
         applyCss: function(index, callback) {
             var isSolid = _node.overlay.css('opacity'),
@@ -206,8 +221,8 @@ $.tEffects.FadeInOut = function(manager) {
             } else {
                 _node.boundingBox.css('backgroundImage', 'url(' + img.attr('src') + ')');
             }
-            _node.overlay.css('opacity', (isSolid === "0") ? '1.0' : '0');
-            window.setTimeout(callback, manager.duration * 1000);
+            _node.overlay.css3('opacity', (isSolid === "0") ? '1.0' : '0');
+            window.setTimeout(callback, manager.settings.transitionDuration * 1000);
         },
         applyJs: function(index, callback) {
             var img = manager.getImage(index);
@@ -222,9 +237,18 @@ $.tEffects.FadeInOut = function(manager) {
 }
 
 $.tEffects.Scroll = function(manager) {
-    var _node = manager.node;
+    var _node = manager.node, _ceil;
     return {
+        type: "linearGrid",
         init: function() {
+            _ceil = {
+                'width' : manager.direction === HORIZONTAL
+                    ? $(this).width()  // Horizontal transition
+                    : Math.ceil($(this).width() / manager.settings.cols), // Vertical one
+                'height' : manager.direction === HORIZONTAL
+                    ? Math.ceil($(this).height() / manager.settings.rows)
+                    : $(this).height()
+            };
             this.isHorizontal = (manager.direction === HORIZONTAL);
             this.render();
         },
@@ -232,7 +256,7 @@ $.tEffects.Scroll = function(manager) {
             _node.boundingBox
                 .addClass('te-boundingBox')
                 .css('overflow', "hidden")
-                .css3('transition-duration', manager.duration + "s")
+                .css3('transition-duration', manager.settings.transitionDuration + "s")
                 .html('');
             _node.slider = $('<div class="te-slider te-transition"><!-- --></div>')
                 .appendTo(_node.boundingBox);
@@ -248,7 +272,7 @@ $.tEffects.Scroll = function(manager) {
             _node.slider.css3("transform", "translate" + (this.isHorizontal
                 ? "X" : "Y") + "(-" + (index * (this.isHorizontal
                 ? manager.canvas.width : manager.canvas.height)) + "px)");
-            window.setTimeout(callback, manager.duration * 1000);
+            window.setTimeout(callback, manager.settings.transitionDuration * 1000);
         },
         applyJs: function(index, callback) {
              var initX = manager.index * manager.canvas.width,
@@ -267,8 +291,8 @@ $.tEffects.Scroll = function(manager) {
                     }
                 },
                 completedCallback: callback,
-                iterations: (isHorizontal ? manager.rows : manager.cols),
-                delay: manager.delay,
+                iterations: (isHorizontal ? manager.settings.rows : manager.settings.cols),
+                delay: manager.settings.transitionDelay,
                 scope: this}).run();
         }
     }
@@ -276,9 +300,17 @@ $.tEffects.Scroll = function(manager) {
 
 
 $.tEffects.Ladder = function(manager) {
-    var _node = manager.node;
+    var _node = manager.node, _cell = {};
     return {
         init: function() {
+            _cell = {
+                'width' : manager.direction === HORIZONTAL
+                    ? $(this).width()  // Horizontal transition
+                    : Math.ceil($(this).width() / manager.settings.cols), // Vertical one
+                'height' : manager.direction === HORIZONTAL
+                    ? Math.ceil($(this).height() / manager.settings.rows)
+                    : $(this).height()
+            };
             this.isHorizontal = (manager.direction === HORIZONTAL);
             this.render();
             var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
@@ -298,18 +330,18 @@ $.tEffects.Ladder = function(manager) {
             // Ceils wrapper guarantees that when column width * columns number != overlay width
             // columns are still in line
             _node.overlay.find('div.te-grid').css({
-                "width": manager.ceil.width * manager.cols,
+                "width": _cell.width * manager.settings.cols,
                 "display": "block"
             });
         },
         renderCss: function() {
             var offset = 0, delay = 0, isHorizontal = this.isHorizontal
             _node.ceils.css({
-                'width': isHorizontal ? 0 : manager.ceil.width,
-                'height' : isHorizontal ? manager.ceil.height : 0
+                'width': isHorizontal ? 0 : _cell.width,
+                'height' : isHorizontal ? _cell.height : 0
                 })
                 .addClass('te-transition')
-                .css3('transition-duration', manager.duration + "s")
+                .css3('transition-duration', manager.settings.transitionDuration + "s")
                 .each(function(){
                     $(this).css({
                         'backgroundImage': 'url(' + manager.getImage().attr('src') + ')',
@@ -317,14 +349,14 @@ $.tEffects.Ladder = function(manager) {
                             ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
                         'backgroundRepeat': 'no-repeat'
                     }).css3('transition-delay', delay + 'ms')
-                    delay += manager.delay;
-                    offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
+                    delay += manager.settings.transitionDelay;
+                    offset -= (isHorizontal ? _cell.height : _cell.width);
             });
         },
         renderJs: function() {
             _node.ceils.css({
-                'width': manager.ceil.width,
-                'height' : manager.ceil.height
+                'width': _cell.width,
+                'height' : _cell.height
             });
         },
         applyCss: function(index, callback) {
@@ -344,7 +376,7 @@ $.tEffects.Ladder = function(manager) {
                 _node.ceils.css("height", (isOdd ? manager.canvas.height : "1px"));
             }
             _node.overlay.toggleClass("te-odd");
-            window.setTimeout(callback, manager.duration * 1000);
+            window.setTimeout(callback, manager.settings.transitionDuration * 1000);
         },
         applyJs: function(index, callback) {
              var origImg = manager.getImage(), newImg = manager.getImage(index),
@@ -360,34 +392,33 @@ $.tEffects.Ladder = function(manager) {
                                 ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
                             'backgroundRepeat': 'no-repeat'
                         });
-                        offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
+                        offset -= (isHorizontal ? _cell.height : _cell.width);
                     });
                 },
                 iteratedCallback: function(i){                    
                     var offsetFading = 0, offsetX = 0, offsetY = 0,
                         factor = isHorizontal 
-                            ? Math.ceil(manager.canvas.width / manager.rows)
-                            : Math.ceil(manager.canvas.height / manager.cols);
-//@TODO: try to move bacground from the -width to 0
+                            ? Math.ceil(manager.canvas.width / manager.settings.rows)
+                            : Math.ceil(manager.canvas.height / manager.settings.cols);
                     _node.ceils.each(function(){
                         if (isHorizontal) {
                             offsetX = (manager.canvas.width - (i * factor) - offsetFading);
                             $(this).css('backgroundPosition', (offsetX < 0 ? 0 : offsetX) + 'px '
                                 + offsetY + 'px');
-                            offsetY -= manager.ceil.height;
+                            offsetY -= _cell.height;
                             offsetFading += factor;
                         } else {                            
                             offsetY = (manager.canvas.height - (i * factor) - offsetFading);
                             $(this).css('backgroundPosition', offsetX + 'px '
                                 + (offsetY < 0 ? 0 : offsetY) + 'px');
-                            offsetX -= manager.ceil.width;
+                            offsetX -= _cell.width;
                             offsetFading += factor;
                         }                        
                     });
                 },
                 completedCallback: callback,
-                iterations: (isHorizontal ? manager.rows : manager.cols),
-                delay: manager.delay,
+                iterations: (isHorizontal ? manager.settings.rows : manager.settings.cols),
+                delay: manager.settings.transitionDelay,
                 scope: this}).run();
         }
     }
@@ -395,9 +426,17 @@ $.tEffects.Ladder = function(manager) {
 
 
 $.tEffects.Jalousie = function(manager) {
-    var _node = manager.node;
+    var _node = manager.node, _cell= {};
     return {
         init: function() {
+            _cell = {
+                'width' : manager.direction === HORIZONTAL
+                    ? $(this).width()  // Horizontal transition
+                    : Math.ceil($(this).width() / manager.settings.cols), // Vertical one
+                'height' : manager.direction === HORIZONTAL
+                    ? Math.ceil($(this).height() / manager.settings.rows)
+                    : $(this).height()
+            };
             this.isHorizontal = (manager.direction === HORIZONTAL);
             this.render();
             var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
@@ -415,8 +454,8 @@ $.tEffects.Jalousie = function(manager) {
             _node.ceils = _node.overlay.find('div.te-grid > div');
 
             _node.overlay.find('div.te-grid').css({
-                "width": (this.isHorizontal ? manager.canvas.width : (manager.ceil.width * manager.cols) + manager.ceil.width),
-                "height": (this.isHorizontal ? (manager.ceil.height * manager.rowss) + manager.ceil.height: manager.canvas.height),
+                "width": (this.isHorizontal ? manager.canvas.width : (_cell.width * manager.settings.cols) + _cell.width),
+                "height": (this.isHorizontal ? (_cell.height * manager.settings.rows) + _cell.height: manager.canvas.height),
                 "display": "block"
             });
         },
@@ -424,11 +463,11 @@ $.tEffects.Jalousie = function(manager) {
             var offset = 0, isHorizontal = this.isHorizontal
 
             _node.ceils.css({
-                'width': manager.ceil.width,
-                'height' : manager.ceil.height
+                'width': _cell.width,
+                'height' : _cell.height
                 })
                 .addClass('te-transition')
-                .css3('transition-duration', manager.duration + "s")
+                .css3('transition-duration', manager.settings.transitionDuration + "s")
                 .each(function(){
                     $(this).css({
                         'backgroundImage': 'url(' + manager.getImage().attr('src') + ')',
@@ -436,18 +475,18 @@ $.tEffects.Jalousie = function(manager) {
                             ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
                         'backgroundRepeat': 'no-repeat'
                     });
-                    offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
+                    offset -= (isHorizontal ? _cell.height : _cell.width);
             });
 
         },
         renderJs: function() {
             _node.ceils.css(this.isHorizontal
             ? {
-                'margin-top': manager.ceil.height + "px",
+                'margin-top': _cell.height + "px",
                 'width': manager.canvas.width,
                 'height' : "0px"
             } : {
-                'margin-left': manager.ceil.width + "px",
+                'margin-left': _cell.width + "px",
                 'width': "0px",
                 'height' : manager.canvas.height
             }
@@ -472,7 +511,7 @@ $.tEffects.Jalousie = function(manager) {
             }
 
             _node.overlay.toggleClass("te-odd");
-            window.setTimeout(callback, manager.duration * 1000);
+            window.setTimeout(callback, manager.settings.transitionDuration * 1000);
         },
         applyJs: function(index, callback) {
              var origImg = manager.getImage(), newImg = manager.getImage(index),
@@ -490,34 +529,165 @@ $.tEffects.Jalousie = function(manager) {
                                 ),
                             'backgroundRepeat': 'no-repeat'
                         });
-                        offset -= (isHorizontal ? manager.ceil.height : manager.ceil.width);
+                        offset -= (isHorizontal ? _cell.height : _cell.width);
                     });
                 },
                 iteratedCallback: function(i){
                     var progress = isHorizontal
-                        ? Math.ceil(i * manager.ceil.height / manager.rows)
-                        : Math.ceil(i * manager.ceil.width / manager.cols);
+                        ? Math.ceil(i * _cell.height / manager.settings.rows)
+                        : Math.ceil(i * _cell.width / manager.settings.cols);
 
                     _node.ceils.each(function(){
                         $(this).css(
                         isHorizontal
                         ? {
                             "height": (progress) + "px",
-                            "margin": (manager.ceil.height - progress)  + "px 0px 0px 0px"
+                            "margin": (_cell.height - progress)  + "px 0px 0px 0px"
                         }
                         : {
                             "width": (progress) + "px",
-                            "margin": "0px 0px 0px " + (manager.ceil.width - progress)  + "px"
+                            "margin": "0px 0px 0px " + (_cell.width - progress)  + "px"
                         });
                     });
                 },
                 completedCallback: callback,
-                iterations: (isHorizontal ? manager.rows : manager.cols),
-                delay: manager.delay,
+                iterations: (isHorizontal ? manager.settings.rows : manager.settings.cols),
+                delay: manager.settings.transitionDelay,
                 scope: this}).run();
         }
     }
 }
 
+
+$.tEffects.Matrix = function(manager) {
+    var _node = manager.node, _cell = {}, _dimension = manager.settings.dimension;
+    return {
+        init: function() {
+            _cell = {
+                'width' : Math.ceil(manager.canvas.width / _dimension),
+                'height' : Math.ceil(manager.canvas.height / _dimension)
+            };
+            this.render();
+            var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
+            this[method]();
+        },
+        render: function() {
+            _node.boundingBox.css('backgroundImage', 'url(' + manager.getImage().attr('src') + ')')
+                .addClass('te-boundingBox')
+                .html('');
+
+            _node.overlay = $('<div class="te-overlay te-vertical-linear-grid te-odd">' 
+                + manager.getMatrixGrid() + '</div>')
+                .appendTo(_node.boundingBox);
+            _node.ceils = _node.overlay.find('div.te-grid > div');
+            _node.ceils.css({
+                "width": _cell.width,
+                "height": _cell.height,
+                "display": "inline-block"
+            });
+            // Maybe some common function
+            _node.overlay.find('div.te-grid').css({
+                "width": _cell.width * manager.settings.cols,
+                "height": _cell.height * manager.settings.rows,
+                "display": "block"
+            });
+        },
+        renderCss: function() {
+            var delay, i = 0;
+            _node.ceils
+                .addClass('te-transition')
+                .addClass('te-opacity-min')
+                .css({
+                        'backgroundImage': 'url(' + manager.getImage().attr('src') + ')',
+                        'backgroundRepeat': 'no-repeat'
+                })
+                .css3('transition-duration', manager.settings.transitionDuration + "s")
+                .css3('transition-property', "opacity");
+                
+                for (var r = 0; r < _dimension; r++) {
+                    for (var c = 0; c < _dimension; c++) {
+                        if (manager.settings.method === DEFAULT) {
+                            delay = Math.max(c, r)  * (manager.settings.transitionDelay * 2);
+                        } else {
+                            delay = Math.floor(Math.random() * _dimension * manager.settings.transitionDelay);
+                        }
+                        $(_node.ceils[i++]).css('backgroundPosition', "-" + (c * _cell.width) + "px " 
+                            + "-" + (r * _cell.height) + "px")
+                        .css3('transition-delay', delay + 'ms');
+                    }
+                }
+        },
+        renderJs: function() {
+            _node.ceils.css(this.isHorizontal
+            ? {
+                'margin-top': _cell.height + "px",
+                'width': manager.canvas.width,
+                'height' : "0px"
+            } : {
+                'margin-left': _cell.width + "px",
+                'width': "0px",
+                'height' : manager.canvas.height
+            }
+            );
+        },
+        applyCss: function(index, callback) {
+            var isOdd = _node.overlay.hasClass("te-odd"),
+            origImg = manager.getImage(), newImg = manager.getImage(index);
+
+            _node.boundingBox.css('backgroundImage',
+                'url(' + (isOdd ? origImg.attr('src') : newImg.attr('src')) + ')');
+            _node.ceils.css({
+                  'backgroundImage': 'url(' +
+                      (!isOdd ? origImg.attr('src') : newImg.attr('src'))  + ')'
+            });
+            // Make the transition            
+            _node.ceils.css3('opacity', isOdd ? '1.0' : '0');
+            _node.overlay.toggleClass("te-odd");
+            window.setTimeout(callback, manager.settings.transitionDuration * 1000);
+        },
+        applyJs: function(index, callback) {
+             var origImg = manager.getImage(), newImg = manager.getImage(index),
+             isHorizontal = this.isHorizontal;
+             $.aQueue.add({
+                startedCallback: function(){
+                    var offset = 0;
+                    _node.boundingBox.css('backgroundImage', 'url(' + origImg.attr('src') + ')');
+                    _node.ceils.each(function(){
+                        $(this).css({
+                            'backgroundImage': 'url(' + newImg.attr('src') + ')',
+                            'backgroundPosition': (isHorizontal
+                                ? '0px ' + offset + 'px' :
+                                offset + 'px 0px'
+                                ),
+                            'backgroundRepeat': 'no-repeat'
+                        });
+                        offset -= (isHorizontal ? _cell.height : _cell.width);
+                    });
+                },
+                iteratedCallback: function(i){
+                    var progress = isHorizontal
+                        ? Math.ceil(i * _cell.height / manager.settings.rows)
+                        : Math.ceil(i * _cell.width / manager.settings.cols);
+
+                    _node.ceils.each(function(){
+                        $(this).css(
+                        isHorizontal
+                        ? {
+                            "height": (progress) + "px",
+                            "margin": (_cell.height - progress)  + "px 0px 0px 0px"
+                        }
+                        : {
+                            "width": (progress) + "px",
+                            "margin": "0px 0px 0px " + (_cell.width - progress)  + "px"
+                        });
+                    });
+                },
+                completedCallback: callback,
+                iterations: (isHorizontal ? manager.settings.rows : manager.settings.cols),
+                delay: manager.settings.transitionDelay,
+                scope: this}).run();
+        }
+    }
+}
 
 })( jQuery );
