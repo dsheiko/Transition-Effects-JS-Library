@@ -45,8 +45,9 @@ $.tEffects = function(settings) {
                 boundingBox : settings.boundingBox,
                 overlay : null,
                 slider : null,
-                images: settings.boundingBox.find("img"),
-                ceils: [] // Elements (divs) representing columns/rows of the grid
+                images: [],
+                ceils: [], // Elements (divs) representing columns/rows of the grid
+                controls: [] // 
             },
             index: 0,
             canvas: {
@@ -72,13 +73,20 @@ $.tEffects = function(settings) {
                 transitionDelay : 50, // ms
                 cols: 10,
                 rows: 10,
+                initalIndex: 0,
                 dimension: 10,
-                method: DEFAULT // can be random, diagonal (for now used only on Matrix)
+                method: DEFAULT, // can be random, diagonal (for now used only on Matrix)
+                controls: {
+                    template: null,
+                    appendTo: null
+                },
+                images: []
             },
-            init: function() {
-                this.listLength = this.node.images.length;
+            init: function() {                
                 // Settings
                 $.extend(this.settings, settings);
+                this.node.images = this.node.boundingBox.find("img");
+                this.index = this.settings.initalIndex;
                 this.checkEntryConditions();
                 this.updateTriggersState();
                 // Driver will be available as soon as the first image of the prpvided list loaded 
@@ -90,7 +98,7 @@ $.tEffects = function(settings) {
                 });                
             },
             checkEntryConditions: function() {
-                if (!this.listLength) {
+                if (!this.node.images.length) {
                     throw "No images found";
                 }
                 if (typeof $.tEffects[settings.effect] === "undefined") {
@@ -99,7 +107,7 @@ $.tEffects = function(settings) {
             },
             render : function(callback) {                   
                    // Workaround for image load event binding with IE bug
-                   $(this.node.images[0]).attr('src', function(i, val) {
+                   $(this.node.images[this.index]).attr('src', function(i, val) {
                       return val + "?v=" + (new Date()).getTime()
                     }).bind("load", this, function(e){
                        var manager = e.data;
@@ -112,7 +120,10 @@ $.tEffects = function(settings) {
                        manager.node.boundingBox.css({
                            "width": manager.canvas.width,
                            "height": manager.canvas.height
-                       });
+                       }); 
+                       if (manager.settings.controls.template !== null) {
+                           manager.renderControls();
+                       }
                        if (manager.driver === null) {
                             callback.apply(manager, arguments);
                        }
@@ -163,17 +174,23 @@ $.tEffects = function(settings) {
                 }
             },
             getImage: function(key) {
+                var image;
                 if (typeof key === "string") {
                     switch (key) {
                         case "next":
-                            return $(this.node.images[this.index + 1]);
+                            image = $(this.node.images[this.index + 1]);
+                            break;
                         case "prev":
-                            return $(this.node.images[this.index - 1]);
+                            image = $(this.node.images[this.index - 1]);
+                            break;
                         default:
                             throw "Insufficient key";
                     }
+                } else {
+                    image = $(this.node.images[typeof key !== "undefined" ? key : this.index]);
                 }
-                return $(this.node.images[typeof key !== "undefined" ? key : this.index]);
+                $(document).trigger("image.t-effect", [image]);
+                return image;
             },
             getLinearGrid: function() {
                 var html = '<div class="te-grid">';
@@ -190,10 +207,46 @@ $.tEffects = function(settings) {
                     html += '<div><!-- --></div>';
                 }
                 return html + '</div>';
+            },
+            renderControls: function() {                            
+                for(var i = 0, limit = this.node.images.length; i < limit; i++) {                    
+                    this.node.controls[i] = $(this.settings.controls.template)
+                        .appendTo(this.settings.controls.appendTo);
+                    $(this.node.controls[this.index]).addClass('te-trigger-inactive');    
+                    this.node.controls[i].data("index", i).bind('click.t-effect', this, function(e){                        
+                        var manager = e.data, index = $(this).data("index");
+                        e.preventDefault();
+                        if ($(this).hasClass("te-trigger-inactive")) { return false; }                        
+                        manager.invoke.apply(manager.driver, [index]);
+                        manager.index = index;
+                        manager.updateTriggersState();                        
+                        $.each(manager.node.controls, function(){ $(this).removeClass('te-trigger-inactive');})
+                        $(manager.node.controls[index]).addClass('te-trigger-inactive');
+                    });
+                };                
             }
         }
     }
     _manager.init();
+    return _manager;
+};
+
+$.tEffects.None = function(manager) {
+    var _manager = manager;
+    return {
+        init: function() {
+            _manager.node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')')
+                .html('');
+        },        
+        applyCss: function(index, callback) {
+            _manager.node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage(index).attr('src') + ')');
+            callback();
+        },
+        applyJs: function(index, callback) {
+            _manager.node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage(index).attr('src') + ')');
+            callback();
+        }
+    }
 };
 
 $.tEffects.FadeInOut = function(manager) {
@@ -205,7 +258,8 @@ $.tEffects.FadeInOut = function(manager) {
         },
         render: function() {
             _node.boundingBox.css('backgroundImage', 'url(' + this.manager.getImage().attr('src') + ')')
-                .addClass('te-boundingBox');
+                .addClass('te-boundingBox')
+                .html('');
             _node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
                 .appendTo(_node.boundingBox);
             _node.overlay
@@ -261,7 +315,7 @@ $.tEffects.Scroll = function(manager) {
                 .appendTo(_node.boundingBox);
             _node.slider
                 .append(_node.images)
-                .css("width", manager.canvas.width * manager.listLength)
+                .css("width", manager.canvas.width * manager.node.images.length)
                 .find("img").css({
                     "display": (this.isHorizontal ? "inline" : "block"),
                     "visibility": "visible"
