@@ -10,7 +10,9 @@
 (function( $ ) {
 
 var NEXT = "next", PREV = "prev", VERTICAL = "vertical", HORIZONTAL = "horizontal",
-    DEFAULT = 'default', LEFT_ARROW_CODE = 37, RIGHT_ARROW_CODE = 39;
+    DEFAULT = 'default', LEFT_ARROW_CODE = 37, RIGHT_ARROW_CODE = 39,
+    TO_RIGHT = "to-right", TO_LEFT = "to-left",
+    TO_TOP = "to-top", TO_BOTTOM = "to-bottom";
 
 Util = {
     ucfirst : function(str) {
@@ -244,8 +246,9 @@ $.tEffects = function(settings) {
                     this.node.controls[i].data("index", i).bind('click.t-effect', this, _handler.goChosen);
                 }
             },
-            attachImageTo: function(nodeName, index) {
-                this.node[nodeName].css('backgroundImage', 'url(' + this.getImage(index).attr('src') + ')');
+            attachImageTo: function(nodePointer, index) {
+                var node = typeof nodePointer ===  "string" ? this.node[nodePointer] : nodePointer;
+                node.css('backgroundImage', 'url(' + this.getImage(index).attr('src') + ')');
                 return this;
             },
             removeImages: function() {
@@ -314,35 +317,61 @@ $.tEffects.FadeInOut = function(manager) {
 }
 
 $.tEffects.Shutter = function(manager) {
-    var _manager = manager, _isHorizontal = (_manager.settings.direction === HORIZONTAL);
+    var _manager = manager, _dir = _manager.settings.direction, overlay;
     return {        
         init: function() {
             _manager
                 .attachImageTo("boundingBox")
                 .removeImages();
 
-            _manager.node.overlay = $('<div class="te-overlay te-transition"><!-- --></div>')
+            overlay = $('<div class="te-overlay te-transition"><!-- --></div>')
                 .appendTo(_manager.node.boundingBox);
-            _manager.node.overlay.css3({'transition-duration': manager.settings.transitionDuration + "s"});
+            //overlay.css3({'transition-duration': manager.settings.transitionDuration + "s"});
+
         },
         applyCss: function(index, callback) {
-            var isOdd = _manager.node.overlay.hasClass("te-odd");
+            var isOdd = overlay.hasClass("te-odd");
 
             _manager
                 .attachImageTo("boundingBox", (!isOdd ? index : undefined))
-                .attachImageTo("overlay", (isOdd ? index : undefined));
-                
-            _manager.node.overlay.css3({"transform":  "translate" + (_isHorizontal ? "X" : "Y") + "(" + (isOdd ? 0 : _manager.canvas.width) + "px)"});
-            _manager.node.overlay.toggleClass("te-odd");
-            window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
+                .attachImageTo(overlay, (isOdd ? index : undefined));
+
+              overlay.css3({
+                  'animation-name' : 'ShutterToRight',
+                  'animation-duration' : "1s",
+                  'animation-timing-function' : "ease-in-out"                 
+              });
+
+              /*
+            _manager.node.overlay.css3({"transform":  "translate" + ((_dir === TO_RIGHT || _dir === TO_LEFT)
+                    ? "X" : "Y") + "(" + (isOdd ? 0 : _manager.canvas.width) + "px)"});
+
+            */
+            //overlay.toggleClass("te-odd");
+            //window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
         applyJs: function(index, callback) {
-             var iterations = 10;
-alert(1);
+             var iterations = 10, overlay = _manager.node.overlay;
              $.aQueue.add({
-                startedCallback: function(){},
+                startedCallback: function(){
+                    overlay.css('visibility', 'visible');
+                    _manager
+                        .attachImageTo("boundingBox", undefined)
+                        .attachImageTo("overlay", index);
+                },
                 iteratedCallback: function(i){
-                    _manager.node.overlay.css({"backgroundPosition": Math.ceil(_manager.canvas.width / iterations * i) + "px 0x"});
+                    var fX = Math.ceil(_manager.canvas.width / iterations * i),
+                        fY = Math.ceil(_manager.canvas.height / iterations * i), x, y;
+                        switch (_dir) {
+                            case TO_RIGHT   : x = fX - _manager.canvas.width; y = 0; break;
+                            case TO_LEFT    : x = _manager.canvas.width - fX; y = 0; break;
+                            case TO_BOTTOM     : x = 0; y = fY - _manager.canvas.height; break;
+                            case TO_TOP  : x = 0; y = _manager.canvas.height - fY; break;
+                        }
+                        overlay.css({"backgroundPosition": x + "px " + y + "px"});
+                        if (overlay.css('visibility') !== 'visible') {
+                            overlay.css('visibility', 'visible');
+                        }
                 },
                 completedCallback: callback,
                 iterations: iterations,
