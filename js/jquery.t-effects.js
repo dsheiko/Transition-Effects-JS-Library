@@ -187,7 +187,7 @@ $.tEffects = function(settings) {
                 }
             },
             invoke: function(index) {
-                var method = "apply" + (Util.isPropertySupported('transition') ? 'Css' : 'Js');
+                var method = "update" + (Util.isPropertySupported('transition') ? '' : 'Fallback');
                 if (typeof this[method] !== "undefined") {
                     $(document).trigger('start-transition.t-effect', [index]);
                     this[method](index, function(){
@@ -268,11 +268,11 @@ $.tEffects.Default = function(manager) {
             _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage().attr('src') + ')')
                 .html('');
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage(index).attr('src') + ')');
             callback();
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
             _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage(index).attr('src') + ')');
             callback();
         }
@@ -292,7 +292,7 @@ $.tEffects.FadeInOut = function(manager) {
                 .css3('transition-duration', manager.settings.transitionDuration + "s")
                 .css3('transition-property', "opacity")
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             var isSolid = _manager.node.overlay.css('opacity'),
                 img = manager.getImage(index);
 
@@ -304,7 +304,7 @@ $.tEffects.FadeInOut = function(manager) {
             _manager.node.overlay.css3('opacity', (isSolid === "0") ? '1.0' : '0');
             window.setTimeout(callback, manager.settings.transitionDuration * 1000);
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
             var img = manager.getImage(index);
             _manager.node.overlay.hide();
             _manager.node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');
@@ -329,7 +329,7 @@ $.tEffects.Shutter = function(manager) {
             //overlay.css3({'transition-duration': manager.settings.transitionDuration + "s"});
 
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             var isOdd = overlay.hasClass("te-odd");
 
             _manager
@@ -350,7 +350,7 @@ $.tEffects.Shutter = function(manager) {
             //overlay.toggleClass("te-odd");
             //window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
              var iterations = 10, overlay = _manager.node.overlay;
              $.aQueue.add({
                 startedCallback: function(){
@@ -413,13 +413,13 @@ $.tEffects.Scroll = function(manager) {
                     "visibility": "visible"
                 });
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             _manager.node.slider.css3("transform", "translate" + (this.isHorizontal
                 ? "X" : "Y") + "(-" + (index * (this.isHorizontal
                 ? _manager.canvas.width : _manager.canvas.height)) + "px)");
             window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
              var initX = _manager.index * _manager.canvas.width,
                  offsetX = (index * _manager.canvas.width - initX),
                  initY = _manager.index * _manager.canvas.height,
@@ -504,7 +504,7 @@ $.tEffects.Ladder = function(manager) {
                 'height' : _cell.height
             });
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             var isOdd = _manager.node.overlay.hasClass("te-odd"),
             origImg = _manager.getImage(), newImg = _manager.getImage(index);
 
@@ -523,7 +523,7 @@ $.tEffects.Ladder = function(manager) {
             _manager.node.overlay.toggleClass("te-odd");
             window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
              var origImg = _manager.getImage(), newImg = _manager.getImage(index),
              isHorizontal = this.isHorizontal;
              $.aQueue.add({
@@ -637,7 +637,7 @@ $.tEffects.Jalousie = function(manager) {
             }
             );
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             var isOdd = _manager.node.overlay.hasClass("te-odd"),
             origImg = _manager.getImage(), newImg = _manager.getImage(index);
 
@@ -658,7 +658,7 @@ $.tEffects.Jalousie = function(manager) {
             _manager.node.overlay.toggleClass("te-odd");
             window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
              var origImg = _manager.getImage(), newImg = _manager.getImage(index),
              isHorizontal = this.isHorizontal;
              $.aQueue.add({
@@ -783,7 +783,7 @@ $.tEffects.Matrix = function(manager) {
                     }
                 }
         },
-        applyCss: function(index, callback) {
+        update: function(index, callback) {
             var isOdd = _manager.node.overlay.hasClass("te-odd"),
             origImg = _manager.getImage(), newImg = _manager.getImage(index);
 
@@ -798,7 +798,7 @@ $.tEffects.Matrix = function(manager) {
             _manager.node.overlay.toggleClass("te-odd");
             window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
-        applyJs: function(index, callback) {
+        updateFallback: function(index, callback) {
              var origImg = _manager.getImage(), newImg = _manager.getImage(index);
              $.aQueue.add({
                 startedCallback: function(){
