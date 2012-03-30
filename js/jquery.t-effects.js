@@ -10,9 +10,7 @@
 (function( $ ) {
 
 var NEXT = "next", PREV = "prev", VERTICAL = "vertical", HORIZONTAL = "horizontal",
-    DEFAULT = 'default', LEFT_ARROW_CODE = 37, RIGHT_ARROW_CODE = 39,
-    TO_RIGHT = "to-right", TO_LEFT = "to-left",
-    TO_TOP = "to-top", TO_BOTTOM = "to-bottom";
+    DEFAULT = 'default', LEFT_ARROW_CODE = 37, RIGHT_ARROW_CODE = 39;
 
 Util = {
     ucfirst : function(str) {
@@ -252,7 +250,7 @@ $.tEffects = function(settings) {
                 return this;
             },
             removeImages: function() {
-                this.node.boundingBox.html();
+                this.node.boundingBox.html('');
                 return this;
             }
         }
@@ -317,63 +315,60 @@ $.tEffects.FadeInOut = function(manager) {
 }
 
 $.tEffects.Shutter = function(manager) {
-    var _manager = manager, _dir = _manager.settings.direction, overlay;
+    var _manager = manager, _dir = _manager.settings.direction, _overlay, _odd = false;
     return {        
         init: function() {
             _manager
                 .attachImageTo("boundingBox")
                 .removeImages();
 
-            overlay = $('<div class="te-overlay te-transition"><!-- --></div>')
+            _overlay = $('<div class="te-overlay te-transition"><!-- --></div>')
                 .appendTo(_manager.node.boundingBox);
-            //overlay.css3({'transition-duration': manager.settings.transitionDuration + "s"});
+            _overlay.css3({'transition-duration': manager.settings.transitionDuration + "s"});
 
         },
         update: function(index, callback) {
-            var isOdd = overlay.hasClass("te-odd");
+            var isOdd = _overlay.hasClass("te-odd");
 
             _manager
                 .attachImageTo("boundingBox", (!isOdd ? index : undefined))
-                .attachImageTo(overlay, (isOdd ? index : undefined));
+                .attachImageTo(_overlay, (isOdd ? index : undefined));
+            
+            _overlay.css3({"transform":  "translate" + (_dir === HORIZONTAL
+                    ? "X" : "Y") + "(" + (isOdd ? "0%" : "100%") + ")"});
 
-              overlay.css3({
-                  'animation-name' : 'ShutterToRight',
-                  'animation-duration' : "1s",
-                  'animation-timing-function' : "ease-in-out"                 
-              });
-
-              /*
-            _manager.node.overlay.css3({"transform":  "translate" + ((_dir === TO_RIGHT || _dir === TO_LEFT)
-                    ? "X" : "Y") + "(" + (isOdd ? 0 : _manager.canvas.width) + "px)"});
-
-            */
-            //overlay.toggleClass("te-odd");
-            //window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
+            _overlay.toggleClass("te-odd");
+            window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
         updateFallback: function(index, callback) {
-             var iterations = 10, overlay = _manager.node.overlay;
+             var iterations = 10;
              $.aQueue.add({
                 startedCallback: function(){
-                    overlay.css('visibility', 'visible');
+                    _overlay.css('visibility', 'visible');
                     _manager
-                        .attachImageTo("boundingBox", undefined)
-                        .attachImageTo("overlay", index);
+                        .attachImageTo("boundingBox", (!_odd ? index : undefined))
+                        .attachImageTo(_overlay, (_odd ? index : undefined));
                 },
                 iteratedCallback: function(i){
                     var fX = Math.ceil(_manager.canvas.width / iterations * i),
                         fY = Math.ceil(_manager.canvas.height / iterations * i), x, y;
                         switch (_dir) {
-                            case TO_RIGHT   : x = fX - _manager.canvas.width; y = 0; break;
-                            case TO_LEFT    : x = _manager.canvas.width - fX; y = 0; break;
-                            case TO_BOTTOM     : x = 0; y = fY - _manager.canvas.height; break;
-                            case TO_TOP  : x = 0; y = _manager.canvas.height - fY; break;
+                            case HORIZONTAL: 
+                                x = _odd ? _manager.canvas.width - fX : fX; 
+                                y = 0; break;
+                            default:
+                                y = _odd ? _manager.canvas.height - fY : fY;
+                                x = 0;  break;
                         }
-                        overlay.css({"backgroundPosition": x + "px " + y + "px"});
-                        if (overlay.css('visibility') !== 'visible') {
-                            overlay.css('visibility', 'visible');
+                        _overlay.css({"backgroundPosition": x + "px " + y + "px"});
+                        if (_overlay.css('visibility') !== 'visible') {
+                            _overlay.css('visibility', 'visible');
                         }
                 },
-                completedCallback: callback,
+                completedCallback: function() { 
+                    _odd = !_odd;
+                    callback();
+                },
                 iterations: iterations,
                 delay: _manager.settings.transitionDelay,
                 scope: this}).run();
