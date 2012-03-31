@@ -28,7 +28,9 @@ Util = {
 }
 
 $.fn.css3 = function(prop, val) {
-    var map = {}, css = typeof prop === "object" ? prop : {prop: val};
+    var map = {}, css = typeof prop === "object" ? prop : 
+        (function(){ var css = {}; css[prop] = val; return css; }());
+    
     $.each(css, function(prop, val){
         map[prop] =
         map['-moz-' + prop] =
@@ -220,6 +222,16 @@ $.tEffects = function(settings) {
                 }
                 return $(this.node.images[typeof key !== "undefined" ? key : this.index]);
             },
+            getLinearGridCellSize : function() {
+                var _dir = this.settings.direction;
+                return  {
+                    'width' : _dir === HORIZONTAL ? this.canvas.width  // Horizontal transition
+                        : Math.ceil(this.canvas.width / this.settings.cols), // Vertical one
+                    'height' : _dir === HORIZONTAL
+                        ? Math.ceil(this.canvas.height / this.settings.rows)
+                        : this.canvas.height
+                };  
+            },
             getLinearGrid: function() {
                 var html = '<div class="te-grid">';
                 for (var i = 0, limit = (this.settings.direction === HORIZONTAL
@@ -241,11 +253,10 @@ $.tEffects = function(settings) {
                   ? '<!-- -->' : this['get' + injectionMethod],
               gridDir =  this.settings.direction === HORIZONTAL 
                   ? 'horizontal' : 'vertical', // Crossed grid requires vertical
-              gridClass = (injectionMethod in ["LinearGrid", "CrossedGrid"] ?
+              gridClass = (injectionMethod in {"LinearGrid": 1, "CrossedGrid": 1} ?
                   ' te-' + gridDir + '-grid' : '');
-            
               return $('<div class="te-overlay' + gridClass + '">' 
-                  + callback + '</div>').appendTo(this.node.boundingBox);  
+                  + callback.call(this) + '</div>').appendTo(this.node.boundingBox);  
             },
             renderControls: function() {
                 for(var i = 0, limit = this.node.images.length; i < limit; i++) {
@@ -580,34 +591,28 @@ $.tEffects.Jaw = function(manager) {
         _odd = false, _cell= {}, _cells;
     return {
         init: function() {
-            _cell = {
-                'width' : _dir === HORIZONTAL ? _manager.canvas.width  // Horizontal transition
-                    : Math.ceil(_manager.canvas.width / _manager.settings.cols), // Vertical one
-                'height' : _dir === HORIZONTAL
-                    ? Math.ceil(_manager.canvas.height / _manager.settings.rows)
-                    : _manager.canvas.height
-            };
+            _cell = _manager.getLinearGridCellSize();
             _manager
                 .attachImageTo("boundingBox")
                 .removeImages();
 
-            _overlay = _manager.renderOverlay("LinearGrid");
-            _overlay.addClass('te-' 
-                + (_dir === HORIZONTAL ? 'horizontal' : 'vertical')
-                + '-grid');
+            _overlay = _manager.renderOverlay("LinearGrid");           
             _cells = _overlay.find('div.te-grid > div');
-
+            // When through the rounding of float numbers we lose pixels,
+            // let's make sure cell's parent box enough wide and high
             _overlay.find('div.te-grid').css({
-                "width": (this.isHorizontal ? _manager.canvas.width : (_cell.width * _manager.settings.cols) + _cell.width),
-                "height": (this.isHorizontal ? (_cell.height * _manager.settings.rows) + _cell.height: _manager.canvas.height),
+                "width": (_dir === HORIZONTAL ? _manager.canvas.width 
+                    : (_cell.width * _manager.settings.cols) + _cell.width),
+                "height": (_dir === HORIZONTAL ? (_cell.height 
+                    * _manager.settings.rows) + _cell.height: _manager.canvas.height),
                 "display": "block"
             });
             var method = 'render' + (Util.isPropertySupported('transform') ? '' : 'Fallback');
             this[method]();
         },
         render: function() {
-            var offset = 0, isHorizontal = this.isHorizontal
-
+            var offset = 0;
+            
             _cells.css({
                 'width': _cell.width,
                 'height' : _cell.height
@@ -617,16 +622,16 @@ $.tEffects.Jaw = function(manager) {
                 .each(function(){
                     $(this).css({
                         'backgroundImage': 'url(' + _manager.getImage().attr('src') + ')',
-                        'backgroundPosition': (isHorizontal
+                        'backgroundPosition': (_dir === HORIZONTAL
                             ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
                         'backgroundRepeat': 'no-repeat'
                     });
-                    offset -= (isHorizontal ? _cell.height : _cell.width);
+                    offset -= (_dir === HORIZONTAL ? _cell.height : _cell.width);
             });
 
         },
         renderFallback: function() {
-            _cells.css(this.isHorizontal
+            _cells.css(_dir === HORIZONTAL
             ? {
                 'margin-top': _cell.height + "px",
                 'width': _manager.canvas.width,
@@ -639,65 +644,55 @@ $.tEffects.Jaw = function(manager) {
             );
         },
         update: function(index, callback) {
-            var isOdd = _overlay.hasClass("te-odd"),
-            origImg = _manager.getImage(), newImg = _manager.getImage(index);
-
-            _manager.node.boundingBox.css('backgroundImage',
-                'url(' + (isOdd ? newImg.attr('src') : origImg.attr('src')) + ')');
-            _cells.css({
-                  'backgroundImage': 'url(' +
-                      (!isOdd ? newImg.attr('src') : origImg.attr('src'))  + ')'
-            });
-
+            _manager
+                .attachImageTo("boundingBox", (_odd ? index : undefined))
+                .attachImageTo(_cells, (!_odd ? index : undefined));
+                
             // Make the transition
-            if (this.isHorizontal) {
-                _cells.css3("transform", "scaleY(" + (isOdd ? 0 : 1) + ")");
+            if (_dir === HORIZONTAL) {
+                _cells.css3("transform", "scaleY(" + (_odd ? 0 : 1) + ")");
             } else {
-                _cells.css3("transform", "scaleX(" + (isOdd ? 0 : 1) + ")");
+                _cells.css3("transform", "scaleX(" + (_odd ? 0 : 1) + ")");
             }
 
-            _overlay.toggleClass("te-odd");
+            _odd = !_odd;
             window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
         updateFallback: function(index, callback) {
-             var origImg = _manager.getImage(), newImg = _manager.getImage(index),
-             isHorizontal = this.isHorizontal;
              $.aQueue.add({
                 startedCallback: function(){
                     var offset = 0;
-                    _manager.node.boundingBox.css('backgroundImage', 'url(' + origImg.attr('src') + ')');
+                    _manager.attachImageTo("boundingBox");
                     _cells.each(function(){
                         $(this).css({
-                            'backgroundImage': 'url(' + newImg.attr('src') + ')',
-                            'backgroundPosition': (isHorizontal
-                                ? '0px ' + offset + 'px' :
-                                offset + 'px 0px'
-                                ),
+                            'backgroundImage': 'url(' 
+                                + _manager.getImage(index).attr('src') + ')',
+                            'backgroundPosition': (_dir === HORIZONTAL
+                                ? '0px ' + offset + 'px' : offset + 'px 0px'),
                             'backgroundRepeat': 'no-repeat'
                         });
-                        offset -= (isHorizontal ? _cell.height : _cell.width);
+                        offset -= (_dir === HORIZONTAL ? _cell.height : _cell.width);
                     });
                 },
                 iteratedCallback: function(i){
-                    var progress = isHorizontal
+                    var progress = _dir === HORIZONTAL
                         ? Math.ceil(i * _cell.height / _manager.settings.rows)
                         : Math.ceil(i * _cell.width / _manager.settings.cols);
 
                     _cells.each(function(){
                         $(this).css(
-                        isHorizontal
+                        _dir === HORIZONTAL
                         ? {
                             "height": (progress) + "px",
                             "margin": (_cell.height - progress)  + "px 0px 0px 0px"
-                        }
-                        : {
+                        } : {
                             "width": (progress) + "px",
                             "margin": "0px 0px 0px " + (_cell.width - progress)  + "px"
                         });
                     });
                 },
                 completedCallback: callback,
-                iterations: (isHorizontal ? _manager.settings.rows : _manager.settings.cols),
+                iterations: (_dir === HORIZONTAL ? _manager.settings.rows : _manager.settings.cols),
                 delay: _manager.settings.transitionDelay,
                 scope: this}).run();
         }
