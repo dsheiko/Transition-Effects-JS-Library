@@ -39,7 +39,7 @@
 .te-vertical-grid .te-grid > div {
     display: inline-block;
     float: left;
-    background-repeat: no-repeat;     
+    background-repeat: no-repeat;
 }
 .te-horizontal-grid .te-grid > div {
     display: block;
