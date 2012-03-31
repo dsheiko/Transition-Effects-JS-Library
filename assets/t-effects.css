@@ -27,8 +27,8 @@
     bottom: 0;
     background-repeat: no-repeat;
 }
-.te-horizontal-linear-grid,
-.te-vertical-linear-grid {
+.te-horizontal-grid,
+.te-vertical-grid {
     overflow: hidden;
     vertical-align: bottom;
 }
@@ -36,12 +36,12 @@
     display: none;
 }
 
-.te-vertical-linear-grid .te-grid > div {
+.te-vertical-grid .te-grid > div {
     display: inline-block;
     float: left;
     background-repeat: no-repeat;     
 }
-.te-horizontal-linear-grid .te-grid > div {
+.te-horizontal-grid .te-grid > div {
     display: block;
     background-repeat: no-repeat;
     position: relative;
