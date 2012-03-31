@@ -29,7 +29,7 @@ Util = {
 
 $.fn.css3 = function(prop, val) {
     var map = {}, css = typeof prop === "object" ? prop :
-        (function(){var css = {};ss[prop] = val;return css;}());
+        (function(){var css = {}; css[prop] = val; return css;}());
 
     $.each(css, function(prop, val){
         map[prop] =
@@ -256,7 +256,8 @@ $.tEffects = function(settings) {
               gridClass = (injectionMethod in {"LinearGrid": 1, "CrossedGrid": 1} ?
                   ' te-' + gridDir + '-grid' : '');
               return $('<div class="te-overlay' + gridClass + '">'
-                  + callback.call(this) + '</div>').appendTo(this.node.boundingBox);
+                  + (typeof callback === "string" ? callback : callback.call(this)) 
+                  + '</div>').appendTo(this.node.boundingBox);
             },
             renderControls: function() {
                 for(var i = 0, limit = this.node.images.length; i < limit; i++) {
@@ -300,36 +301,38 @@ $.tEffects.Default = function(manager) {
 };
 
 $.tEffects.FadeInOut = function(manager) {
-    var _manager = manager;
+    var _manager = manager, _overlay;
     return {
         init: function() {
-            _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage().attr('src') + ')')
-                .addClass('te-boundingBox')
-                .html('');
-            _manager.node.overlay = $('<div class="te-overlay te-transition te-opacity-min"><!-- --></div>')
-                .appendTo(_manager.node.boundingBox);
-            _manager.node.overlay
-                .css3('transition-duration', manager.settings.transitionDuration + "s")
-                .css3('transition-property', "opacity")
+            _manager
+                .attachImageTo("boundingBox")
+                .removeImages();
+                
+            _overlay = _manager.renderOverlay();
+            _overlay
+                .addClass('te-transition')
+                .addClass('te-opacity-min')
+                .css3({
+                    'transition-duration': manager.settings.transitionDuration + "s",
+                    'transition-property': "opacity"
+                });
         },
         update: function(index, callback) {
-            var isSolid = _manager.node.overlay.css('opacity'),
-                img = manager.getImage(index);
-
+            var isSolid = _overlay.css('opacity');
             if (isSolid === "0") {
-                _manager.node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');
+                _manager.attachImageTo(_overlay, index);
             } else {
-                _manager.node.boundingBox.css('backgroundImage', 'url(' + img.attr('src') + ')');
+                _manager.attachImageTo("boundingBox", index);
             }
-            _manager.node.overlay.css3('opacity', (isSolid === "0") ? '1.0' : '0');
+            _overlay.css3('opacity', (isSolid === "0") ? '1.0' : '0');
             window.setTimeout(callback, manager.settings.transitionDuration * 1000);
         },
-        updateFallback: function(index, callback) {
-            var img = manager.getImage(index);
-            _manager.node.overlay.hide();
-            _manager.node.overlay.css('backgroundImage', 'url(' + img.attr('src') + ')');
-            _manager.node.overlay.fadeIn('slow', function() {
-                _manager.node.boundingBox.css('backgroundImage', 'url(' + img.attr('src')  + ')');
+        updateFallback: function(index, callback) {            
+            _overlay
+                .hide()
+                .css('backgroundImage', 'url(' + _manager.getImage(index).attr('src') + ')')
+                .fadeIn('slow', function() {                
+                    _manager.attachImageTo(_overlay, index);
                 callback();
             });
         }
