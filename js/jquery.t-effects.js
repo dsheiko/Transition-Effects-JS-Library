@@ -284,15 +284,14 @@ $.tEffects.Default = function(manager) {
     var _manager = manager;
     return {
         init: function() {
-            _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage().attr('src') + ')')
-                .html('');
+            _manager.attachImageTo("boundingBox");
         },
         update: function(index, callback) {
-            _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage(index).attr('src') + ')');
+            _manager.attachImageTo("boundingBox", index);
             callback();
         },
         updateFallback: function(index, callback) {
-            _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage(index).attr('src') + ')');
+            _manager.attachImageTo("boundingBox", index);
             callback();
         }
     }
