@@ -749,73 +749,72 @@ $.tEffects.Jalousie = function(manager) {
     }
 }
 
+$.tEffects.RandomCells = function(manager) {
+    manager.settings.method = 'random';
+    return $.tEffects.DiagonalCells(manager);
+};
 
-
-$.tEffects.Matrix = function(manager) {
-    var _manager = manager, _cell = {}, _dimension = _manager.settings.dimension, _map = [];
+$.tEffects.DiagonalCells = function(manager) {
+    var _manager = manager, _cell, _cells, _dimension = _manager.settings.dimension, _map = [], 
+        _overlay, _reverse = false;
     return {
         init: function() {
             _cell = {
                 'width' : Math.ceil(_manager.canvas.width / _dimension),
                 'height' : Math.ceil(_manager.canvas.height / _dimension)
             };
-            this.render();
-            var method = 'render' + (Util.isPropertySupported('transform') ? 'Css' : 'Js');
-            this[method]();
-        },
-        render: function() {
-            _manager.node.boundingBox.css('backgroundImage', 'url(' + _manager.getImage().attr('src') + ')')
-                .addClass('te-boundingBox')
-                .html('');
-
-            _manager.node.overlay = $('<div class="te-overlay te-vertical-grid te-odd">'
-                + _manager.getCrossedGrid() + '</div>')
-                .appendTo(_manager.node.boundingBox);
-            _manager.node.ceils = _manager.node.overlay.find('div.te-grid > div');
-            _manager.node.ceils.css({
+            _manager.settings.direction = null;
+            _manager.attachImageTo("boundingBox");
+            _overlay = _manager.renderOverlay("CrossedGrid");            
+            _cells = _overlay.find('div.te-grid > div');
+            _cells.css({
                 "width": _cell.width,
                 "height": _cell.height,
                 "display": "inline-block"
             });
-            // Maybe some common function
-            _manager.node.overlay.find('div.te-grid').css({
-                "width": _cell.width * _manager.settings.cols,
-                "height": _cell.height * _manager.settings.rows,
+            _overlay.find('div.te-grid').css({
+                "width": _cell.width * _dimension,
+                "height": _cell.height * _dimension,
                 "display": "block"
             });
+            var method = 'render' + (Util.isPropertySupported('transform') ? '' : 'Fallback');
+            this[method]();
         },
-        renderCss: function() {
+        render: function() {
             var delay, i = 0;
-            _manager.node.ceils
-                .addClass('te-transition')
-                .addClass('te-opacity-min')
-                .css({
+            _cells
+                .addClass('te-transition')                
+                .css3({
+                    'transition-duration': _manager.settings.transitionDuration + "s", 
+                    'transition-property': "opacity",
+                    'opacity': "1.0"
+                }).css({
                         'backgroundImage': 'url(' + _manager.getImage().attr('src') + ')',
                         'backgroundRepeat': 'no-repeat'
-                })
-                .css3('transition-duration', _manager.settings.transitionDuration + "s")
-                .css3('transition-property', "opacity");
+                });
 
                 for (var r = 0; r < _dimension; r++) {
                     for (var c = 0; c < _dimension; c++) {
                         if (_manager.settings.method === DEFAULT) {
                             delay = Math.max(c, r)  * (_manager.settings.transitionDelay * 2);
                         } else {
-                            delay = Math.floor(Math.random() * _dimension * _manager.settings.transitionDelay);
+                            delay = Math.floor(Math.random() * _dimension 
+                                * _manager.settings.transitionDelay);
                         }
-                        $(_manager.node.ceils[i++]).css('backgroundPosition', "-" + (c * _cell.width) + "px "
-                            + "-" + (r * _cell.height) + "px")
+                        $(_cells[i++])
+                            .css('backgroundPosition', "-" + (c * _cell.width) + "px "
+                                + "-" + (r * _cell.height) + "px")
                         .css3('transition-delay', delay + 'ms');
                     }
                 }
         },
-        renderJs: function() {
+        renderFallback: function() {
            var step, i = 0;
-            _manager.node.ceils.css({
-                        'backgroundImage': 'url(' + _manager.getImage().attr('src') + ')',
-                        'backgroundRepeat': 'no-repeat',
-                        'visibility': 'hidden'
-                });
+            _cells.css({
+                    'backgroundImage': 'url(' + _manager.getImage().attr('src') + ')',
+                    'backgroundRepeat': 'no-repeat',
+                    'visibility': 'hidden'
+            });
 
                 for (var r = 0; r < _dimension; r++) {
                     for (var c = 0; c < _dimension; c++) {
@@ -825,40 +824,34 @@ $.tEffects.Matrix = function(manager) {
                             step = Math.floor(Math.random() * _dimension);
                         }
                         _map[i] = step;
-                        $(_manager.node.ceils[i++]).css('backgroundPosition', "-" + (c * _cell.width) + "px "
+                        $(_cells[i++]).css('backgroundPosition', "-" + (c * _cell.width) + "px "
                             + "-" + (r * _cell.height) + "px");
                     }
                 }
         },
         update: function(index, callback) {
-            var isOdd = _manager.node.overlay.hasClass("te-odd"),
-            origImg = _manager.getImage(), newImg = _manager.getImage(index);
+            _manager
+                .attachImageTo("boundingBox", (!_reverse ? index : undefined))
+                .attachImageTo(_cells, (_reverse ? index : undefined));
 
-            _manager.node.boundingBox.css('backgroundImage',
-                'url(' + (isOdd ? origImg.attr('src') : newImg.attr('src')) + ')');
-            _manager.node.ceils.css({
-                  'backgroundImage': 'url(' +
-                      (!isOdd ? origImg.attr('src') : newImg.attr('src'))  + ')'
-            });
             // Make the transition
-            _manager.node.ceils.css3('opacity', isOdd ? '1.0' : '0');
-            _manager.node.overlay.toggleClass("te-odd");
+            _cells.css3('opacity', _reverse ? '1.0' : '0');
+            _reverse = !_reverse;
             window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
         },
         updateFallback: function(index, callback) {
-             var origImg = _manager.getImage(), newImg = _manager.getImage(index);
              $.aQueue.add({
                 startedCallback: function(){
-                    _manager.node.boundingBox.css('backgroundImage', 'url(' + origImg.attr('src') + ')');
-                    _manager.node.ceils.each(function(){
+                    _manager.attachImageTo("boundingBox");
+                    _cells.each(function(){
                         $(this).css({
-                            'backgroundImage': 'url(' + newImg.attr('src') + ')',
+                            'backgroundImage': 'url(' + _manager.getImage(index).attr('src') + ')',
                             'visibility': 'hidden'
                         });
                     });
                 },
                 iteratedCallback: function(step){
-                    _manager.node.ceils.each(function(inx){
+                    _cells.each(function(inx){
                         if (_map[inx] == (step - 1)) {
                             $(this).css('visibility', 'visible');
                         }
