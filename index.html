@@ -24,8 +24,7 @@
     <script type="text/javascript">
     // Document is ready
     $(document).bind('ready.app', function(){       
-       $.tEffects({
-           boundingBox: $('div.boundingBox'),
+       $('div.boundingBox').tEffects({
            effect: "RandomCells", // Deck, DiagonalCells, RandomCells, Jaw, Jalousie, Ladder, Scroll, FadeInOut
             /* method: "random", */
            direction: "horizontal",
@@ -39,7 +38,7 @@
                node: $('button.prev'),
                event: 'click'
            }
-       });
+       }).enable();
     });
     </script>
 </body>

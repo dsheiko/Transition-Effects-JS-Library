@@ -40,7 +40,10 @@ $.fn.css3 = function(prop, val) {
     });
     return $(this).css(map);
 }
-
+$.fn.tEffects = function(settings) {
+    settings.boundingBox = $(this);
+    return $.tEffects(settings);
+};
 $.tEffects = function(settings) {
     var _handler = {
         pressKey : function(e) {
@@ -121,11 +124,10 @@ $.tEffects = function(settings) {
                 images: []
             },
             init: function() {
-                // Settings
-                $.extend(this.settings, settings);
-                this.node.images = this.node.boundingBox.find("img");
-                this.node.boundingBox.addClass('te-boundingBox');
-                this.index = this.settings.initalIndex;
+                this.setup(settings);
+                this.node.images = this.settings.images.length ? this.settings.images 
+                    : this.node.boundingBox.find("img");
+                this.node.boundingBox.addClass('te-boundingBox');                
                 this.checkEntryConditions();
                 this.updateTriggersState();
                 // Implementor will be available as soon as the first image of the prpvided list loaded
@@ -133,8 +135,12 @@ $.tEffects = function(settings) {
                     // Obtain an instance of implementor
                     _implementor = new $.tEffects[settings.effect](this);
                     _implementor.init();
-                    this.syncUI();
                 });
+            },
+            setup: function(settings) {
+                // Settings
+                $.extend(this.settings, settings);
+                this.index = this.settings.initalIndex;
             },
             checkEntryConditions: function() {
                 if (!this.node.images.length) {
@@ -163,6 +169,7 @@ $.tEffects = function(settings) {
                        if (manager.settings.controls.template !== null) {
                            manager.renderControls();
                        }
+                       manager.node.images.css({'visibility' : 'visible'});
                        // Remove images
                        manager.node.boundingBox.html('');
                        if (_implementor === null) {
@@ -197,18 +204,23 @@ $.tEffects = function(settings) {
                     });
                 }
             },
-            syncUI: function() {
+            enable: function() {
                 $(document).bind('keydown', this, _handler.pressKey);
                 if (typeof settings.triggerNext !== "undefined") {
                     $(settings.triggerNext.node).bind(settings.triggerNext.event, this, _handler.goNext);
                 }
-                 if (typeof settings.triggerPrev !== "undefined") {
+                if (typeof settings.triggerPrev !== "undefined") {
                     $(settings.triggerPrev.node).bind(settings.triggerPrev.event, this, _handler.goPrev);
                 }
             },
-            destroy: function() {
+            disable: function() {
                 $(document).unbind('keydown', this, _handler.pressKey);
-                delete _manager;
+                if (typeof settings.triggerNext !== "undefined") {
+                    $(settings.triggerNext.node).unbind(settings.triggerNext.event, _handler.goNext);
+                }
+                if (typeof settings.triggerPrev !== "undefined") {
+                    $(settings.triggerPrev.node).unbind(settings.triggerPrev.event, _handler.goPrev);
+                }
             },
             getImage: function(key) {
                 if (typeof key === "string") {
@@ -306,10 +318,10 @@ $.tEffects.FadeInOut = function(manager) {
             _overlay = _manager.renderOverlay();
             _overlay
                 .addClass('te-transition')
-                .addClass('te-opacity-min')
                 .css3({
                     'transition-duration': manager.settings.transitionDuration + "s",
-                    'transition-property': "opacity"
+                    'transition-property': "opacity",
+                    'opacity' : "0"
                 });
         },
         update: function(index, callback) {

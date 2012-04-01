@@ -18,6 +18,7 @@
 }
 .te-boundingBox img {
     border: 0;
+    visibility: hidden;
 }
 .te-overlay {
     position: absolute;
@@ -45,19 +46,6 @@
     display: block;
     background-repeat: no-repeat;
     position: relative;
-}
-
-.te-opacity-min {
-    -webkit-opacity: 0;
-      -moz-opacity: 0;
-       -o-opacity: 0;
-        opacity: 0;
-}
-.te-opacity-max {
-    -webkit-opacity: 1.0;
-      -moz-opacity: 1.0;
-       -o-opacity: 1.0;
-        opacity: 1.0;
 }
 .te-slider {
     position: absolute;
