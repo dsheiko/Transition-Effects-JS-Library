@@ -60,26 +60,37 @@ The slide-show is running and can be navigated by arrows-keys, but you want to s
 
 effect
     transition effect: Default, FadeInOut, Jalousie, Ladder, Scroll, Deck, Jaw, DiagonalCells, RandomCells 
+
 direction
     transition direction: vertical or horizontal
+
 transitionDuration
     duration of transition in seconds
+
 transitionDelay
     delay between iterations in milliseconds
+
 rows
     number of images slices for vertical direction
+
 cols
     number of images slices for horizontal direction
+
 dimension
     number of columns and rows on a grid
+
 initalIndex
     forces the image of given index be current
+
 triggerNext
     the trigger for Next-image event: { node: node, event: 'click' }
+
 triggerPrev
     the trigger for Previous-image event: { node: node, event: 'click' }
+
 controls
     images direct controls: { template: 'button html', appendTo: toolbar node }
+
 images
     array with images when they passed manually. E.g. images: $('div.storage > img')
 
@@ -87,6 +98,7 @@ images
 
 start-transition.t-effect
     fired staight before transition applied. Handler gets current image index as an argument.
+
 end-transition.t-effect
     fired staight after transition applied. Handler gets current image index as an argument.
 
@@ -94,7 +106,9 @@ end-transition.t-effect
 
 enable
     enables arrow-keys and given controls. 
+
 disable
     disables arrow-keys and given controls. E.g. you have the slide show on an overlay. When overlay is hidden, you use disable method to unsubscribe controls. When the overlay is visible again, use disable method.
+
 reset
     you can reset options on a running tEffetcs instance 
