@@ -151,11 +151,9 @@ $.tEffects = function(settings) {
                 }
             },
             render : function(callback) {
-                   // Workaround for image load event binding with IE bug
-                   $(this.node.images[this.index]).attr('src', function(i, val) {
-                      return val + "?v=" + (new Date()).getTime()
-                    }).bind("load", this, function(e){
+                    var run = function(e){
                        var manager = e.data;
+                       $(this).data('state', 'loaded');
                        // Now since we know the real size of the image (that is supposed
                        // to be size of every enlisted image), we can specify relative vars.
                        manager.canvas = {
@@ -175,7 +173,16 @@ $.tEffects = function(settings) {
                        if (_implementor === null) {
                             callback.apply(manager, arguments);
                        }
-                   });
+                   }
+                   // We know image size only when have it fully loaded
+                   if (this.node.images[this.index].data('state') === 'loaded') {
+                        run();
+                   } else {
+                       // Workaround for image load event binding with IE bug
+                       $(this.node.images[this.index]).attr('src', function(i, val) {
+                          return val + "?v=" + (new Date()).getTime()
+                        }).bind("load", this, run);
+                   }
 
             },
             isset : function(val) {
