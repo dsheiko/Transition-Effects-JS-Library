@@ -2,8 +2,8 @@
 * Slider Transition Effects with CSS3 Shim
 *
 * @package tEffects
-* @author $Author: sheiko $
-* @version $Id: jquery.t-effects.js, v 0.9 $
+* @author Dmitry Sheiko (http://dsheiko.com)
+* @version jquery.t-effects.js, v 1a
 * @license GNU
 * @copyright (c) Dmitry Sheiko http://www.dsheiko.com
 */
@@ -323,13 +323,15 @@ $.tEffects.FadeInOut = function(manager) {
             _manager.attachImageTo("boundingBox");
 
             _overlay = _manager.renderOverlay();
-            _overlay
-                .addClass('te-transition')
-                .css3({
-                    'transition-duration': manager.settings.transitionDuration + "s",
-                    'transition-property': "opacity",
-                    'opacity' : "0"
-                });
+            if (Util.isPropertySupported('transform')) {
+                _overlay
+                    .addClass('te-transition')
+                    .css3({
+                        'transition-duration': manager.settings.transitionDuration + "s",
+                        'transition-property': "opacity",
+                        'opacity' : "0"
+                    });
+            }
         },
         update: function(index, callback) {
             var isSolid = _overlay.css('opacity');
@@ -423,7 +425,7 @@ $.tEffects.Scroll = function(manager) {
             _slider = $('<div class="te-slider te-transition"><!-- --></div>')
                 .appendTo(_manager.node.boundingBox);
             _slider
-                .append(_manager.node.images)
+                .append(_manager.node.images.clone())
                 .css("width", _manager.canvas.width * _manager.node.images.length)
                 .find("img").css({
                     "display": (_dir === HORIZONTAL ? "inline" : "block"),
