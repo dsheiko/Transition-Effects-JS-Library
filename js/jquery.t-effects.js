@@ -431,7 +431,7 @@ $.tEffects.Scroll = function(manager) {
                 .appendTo(_manager.node.boundingBox);
             _slider
                 .append(_manager.node.images.clone())
-                .css("width", _manager.canvas.width * _manager.node.images.length)
+                .css("width", (_manager.canvas.width * _manager.node.images.length) + _manager.node.images.length)
                 .find("img").css({
                     "display": (_dir === HORIZONTAL ? "inline" : "block"),
                     "visibility": "visible"
