@@ -96,20 +96,11 @@ $.tEffects = function(settings) {
                 width: 0,
                 height: 0
             },
-            ceil: {
-                width: 0,
-                height: 0
-            },
-            listLength: 0,
-            duration: 1, // sec
-            delay: 50, // ms
-            cols: 10,
-            rows: 10,
-            direction: VERTICAL,
             settings: {
-                effect: null,
-                triggerNext : function(){},
-                triggerPrev : function(){},
+                effect: null,                
+                direction: VERTICAL,
+                triggerNext : {},
+                triggerPrev : {},
                 transitionDuration : 1, // sec
                 transitionDelay : 50, // ms
                 cols: 10,

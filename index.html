@@ -63,7 +63,7 @@
         color: white;
     }
     article {
-        padding: 14px;
+        padding: 14px 0;
     }
     div.toolbar {
         text-align: center;
@@ -114,6 +114,21 @@
         padding: 0;
         margin-bottom: 5px;
     }
+    
+    dl {
+        padding: 0;
+    }
+    dt {
+        font-weight: bold;
+        display: inline-block;
+        width: 100px;
+        vertical-align: top;
+    }
+    dd {
+        display: inline-block;
+        vertical-align: top;
+        width: 600px;
+    }
 
      button, a.button {
             display: inline-block;
@@ -157,7 +172,10 @@
             width: 100%;
             height: auto;
             padding: 10px;
-        }
+    }
+    var {
+        font-weight: bold;
+    }
     </style>
 </head>
 <body>
@@ -172,7 +190,7 @@
             <p>The plugin allows you to convert simple markup into a slide-show with the set of fancy configurable transition effects.
                 The plugin tries to render the effects with CSS3 transitions. However if the browser does not support CSS3 the efects willbe achieved by JS.</p>
             <p>Every available effect is encopsulated into a single module. So you do not have to violate YAGNI principle. Just remove redundant effect modules and leave the only code responding to your requirements.</p>
-            <a class="button" href="https://github.com/dsheiko/Transition-Effects-JS-Library">Download the latest version from GitHub</a>
+           
         </article>
         <h2>Demo</h2>
         <div class="canvas">
@@ -226,7 +244,7 @@
             <h2>Usage and API</h2>
 
             <h3>Step 1</h3>
-            <p>Including plugin scripts after jQuery (requires jQuery 1.4+):</p>
+            <p>Include plugin scripts after jQuery (requires jQuery 1.4+):</p>
 
             <div>
                 <textarea rows="3" class="code">
@@ -238,7 +256,7 @@
 
 
             <h3>Step 2</h3>
-            <p>To have slideshow running it is enough just to provide a placeholder within DOM with images to slide inside: </p>
+            <p>Provide a placeholder within DOM with images to slide inside: </p>
             <div>
                 <textarea rows="5" class="code">
 <div id="slideshow">
@@ -248,10 +266,10 @@
 </div>
                 </textarea>
             </div>
-            <p>Though if you want to keep images elsewhere, they can be passed into the plugin through images option.</p>
+            <p>If you want to keep images elsewhere, you can pass them into the plugin through the option <var>images</var>.</p>
 
             <h3>Step 3</h3>
-            <p>Now here how the plugin can be initialized and enabled.</p>
+            <p>Here how the plugin being initialized and enabled.</p>
             <div>
                 <textarea rows="7" class="code">
 <script type="text/javascript">
@@ -265,7 +283,8 @@
             </div>
 
             <h3>Step 4 (optional)</h3>
-            <p>The slide-show is running and can be navigated by arrows-keys, but you want to subscribe you own navigation controls. Well, you can do it like that:</p>
+            <p>The slide-show is running now and can be navigated by arrows-keys, but you surelly wish to assign your own controls. 
+                Well, you can do it this way:</p>
             <div>
                 <textarea rows="11" class="code">
 $('#slideshow').tEffects({
@@ -282,17 +301,79 @@ $('#slideshow').tEffects({
                 </textarea>
             </div>
 
-            <h3>Options</h3>
-            <p>...</p>
+            <h3>Available Options</h3>
+            <p></p>
+            <dl>
+                <dt>effect</dt>
+                <dd>transition effect: <var>Default</var>, <var>FadeInOut</var>, 
+                    <var>Jalousie</var>, <var>Ladder</var>, <var>Scroll</var>, 
+                    <var>Deck</var>, <var>Jaw</var>, <var>DiagonalCells</var>, 
+                    <var>RandomCells</var>
+                </dd>
+                
+                <dt>direction</dt>
+                <dd>transition direction: <var>vertical</var> or <var>horizontal</var></dd>
+                
+                <dt>transitionDuration</dt>
+                <dd>duration of transition in seconds</dd>
+                
+                <dt>transitionDelay</dt>
+                <dd>delay between iterations in milliseconds</dd>
+                
+                <dt>rows</dt>
+                <dd>number of images slices for vertical direction</dd>
+                
+                <dt>cols</dt>
+                <dd>number of images slices for horizontal direction</dd>
+                
+                <dt>dimension</dt>
+                <dd>number of columns and rows on a grid</dd>
+                
+                <dt>initalIndex</dt>
+                <dd>forces the image of given index be current</dd>
+                
+                <dt>triggerNext</dt>
+                <dd>the trigger for Next-image event: { node: <var>node</var>, event: 'click' }</dd>
+                
+                <dt>triggerPrev</dt>
+                <dd>the trigger for Previous-image event: { node: <var>node</var>, event: 'click' }</dd>
+                
+                <dt>controls</dt>
+                <dd>images direct controls: { template: 'button html', appendTo: <var>toolbar node</var> }</dd>
+                
+                <dt>images</dt>
+                <dd>array with images when they passed manually. E.g. images: $('div.storage > img')</dd>
+            </dl>
+           
 
             <h3>Events</h3>
-            <p>...</p>
+            <dl>
+                <dt>start-transition.t-effect</dt>
+                <dd>fired staight before transition applied. Handler gets current image index as an argument.</dd>
+                <dt>end-transition.t-effect</dt>
+                <dd>fired staight after transition applied. Handler gets current image index as an argument.</dd>
+            </dl>
 
             <h3>Methods</h3>
-            <p>enable/disable</p>
+            <dl>
+                <dt>enable</dt>
+                <dd>enables arrow-keys and given controls. </dd>
+                <dt>disable</dt>
+                <dd>disables arrow-keys and given controls. E.g. you have the slide show on an overlay. 
+                    When overlay is hidden, you use disable method to unsubscribe controls. 
+                    When the overlay is visible again, use disable method.</dd>
+                <dt>reset</dt>
+                <dd>you can reset options on a running tEffetcs instance</dd>
+            </dl>
 
 
         </article>
+        <footer>
+            <a class="button" href="https://github.com/dsheiko/Transition-Effects-JS-Library/downloads">Download the latest version from GitHub</a>
+            <p><var>jquery.t-effects.js</var> is created by <a href="http://dsheiko.com">Dmitry Sheiko</a>.
+                It's released under the GPLv2 license. If you have any questions or feedback you can use the <a href="https://github.com/dsheiko/Transition-Effects-JS-Library">github project page.</a></p>
+
+        </footer>
     </section>
     <script type="text/javascript">
     // Document is ready

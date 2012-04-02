@@ -9,7 +9,7 @@ Every available effect is encopsulated into a single module. So you do not have 
 
 ### How to use
 
-Step 1
+#### Step 1
 
 Including plugin scripts after jQuery (requires jQuery 1.4+):
 
@@ -17,7 +17,7 @@ Including plugin scripts after jQuery (requires jQuery 1.4+):
     <script src="./js/jquery.a-queue.js" type="text/javascript"></script>
     <script src="./js/jquery.t-effects.js" type="text/javascript"></script>
 
-Step 2
+#### Step 2
 
 To have slideshow running it is enough just to provide a placeholder within DOM with images to slide inside:
 
@@ -28,7 +28,7 @@ To have slideshow running it is enough just to provide a placeholder within DOM 
     </div>
 
 Though if you want to keep images elsewhere, they can be passed into the plugin through images option.
-Step 3
+#### Step 3
 
 Now here how the plugin can be initialized and enabled.
 
@@ -40,7 +40,7 @@ Now here how the plugin can be initialized and enabled.
         });
     </script>
 
-Step 4 (optional)
+#### Step 4 (optional)
 
 The slide-show is running and can be navigated by arrows-keys, but you want to subscribe you own navigation controls. Well, you can do it like that:
 
@@ -56,3 +56,45 @@ The slide-show is running and can be navigated by arrows-keys, but you want to s
         }
     }).enable();
 
+#### Available Options
+
+effect
+    transition effect: Default, FadeInOut, Jalousie, Ladder, Scroll, Deck, Jaw, DiagonalCells, RandomCells 
+direction
+    transition direction: vertical or horizontal
+transitionDuration
+    duration of transition in seconds
+transitionDelay
+    delay between iterations in milliseconds
+rows
+    number of images slices for vertical direction
+cols
+    number of images slices for horizontal direction
+dimension
+    number of columns and rows on a grid
+initalIndex
+    forces the image of given index be current
+triggerNext
+    the trigger for Next-image event: { node: node, event: 'click' }
+triggerPrev
+    the trigger for Previous-image event: { node: node, event: 'click' }
+controls
+    images direct controls: { template: 'button html', appendTo: toolbar node }
+images
+    array with images when they passed manually. E.g. images: $('div.storage > img')
+
+#### Events
+
+start-transition.t-effect
+    fired staight before transition applied. Handler gets current image index as an argument.
+end-transition.t-effect
+    fired staight after transition applied. Handler gets current image index as an argument.
+
+#### Methods
+
+enable
+    enables arrow-keys and given controls. 
+disable
+    disables arrow-keys and given controls. E.g. you have the slide show on an overlay. When overlay is hidden, you use disable method to unsubscribe controls. When the overlay is visible again, use disable method.
+reset
+    you can reset options on a running tEffetcs instance 
