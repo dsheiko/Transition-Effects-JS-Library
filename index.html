@@ -3,33 +3,307 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Transition Effects</title>
-    <link href="./assets/default.css" rel="stylesheet" media="all" />
     <link href="./assets/t-effects.css" rel="stylesheet" media="all" />
     <link rel="shortcut icon" href="./assets/favicon.ico" />
     <link rel="icon" href="./assets/favicon.ico" type="image/ico" />
     <script src="./js/jquery.min.js" type="text/javascript"></script>
     <script src="./js/jquery.a-queue.js" type="text/javascript"></script>
-    <script src="./js/jquery.t-effects.js?v2" type="text/javascript"></script>
+    <script src="./js/jquery.t-effects.js" type="text/javascript"></script>
+<!--[if lt IE 9]>
+        <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+
+    <style type="text/css">
+    body {
+        background-color: #DDDDDD;
+        color: #222222;
+        font-family: MuseoSlab,"Helvetica Neue",Helvetica,Arial,sans-serif;
+        font-size: 14px;
+        margin: 0;
+        padding: 0;
+        line-height: 150%;
+    }
+
+    a, a:visited {
+        color: black;
+    }
+
+    body > section {
+        background-color: #FFFFFF;
+        -webkit-box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+         -moz-box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+          -o-box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+           box-shadow: 4px 0 10px #CCCCCC, -4px 0 10px #CCCCCC, 0 38px 36px -24px #AAAAAA;
+        margin: 0 auto;
+        max-width: 750px;
+        padding: 20px 40px 40px 40px;        
+    }
+
+    section > header {
+        background-color: #3C5F87;
+        -moz-border-radius:5px;
+        -webkit-border-radius:5px;
+        border-radius:5px;
+        -khtml-border-radius:5px;
+        padding: 20px 20px;
+        margin-top: 0px;
+    }
+    header h1 {
+        text-shadow: 2px 2px 2px #333333;
+        font-size: 32px;
+        line-height: 120%;
+        margin: 0;
+        color: white;
+    }
+    header h2 {
+        text-shadow: 2px 2px 2px #333333;
+        font-size: 18px;
+        margin: 3px;
+        color: white;
+    }
+    article {
+        padding: 14px;
+    }
+    div.toolbar {
+        text-align: center;
+    }
+    div.boundingBox {
+        
+    }
+    div.canvas {
+        background-color: #000;
+        padding: 14px;
+        -moz-border-radius:5px;
+        -webkit-border-radius:5px;
+        border-radius:5px;
+        -khtml-border-radius:5px;
+    }
+    div.boundingBox img {
+        visibility: hidden;
+    }
+    .te-trigger-inactive {
+        background: white;
+        color: #555;
+    }
+
+    section.column {
+        width: 50%;
+        float: left
+    }
+    form fieldset {
+        width: 345px;
+        border: 1px solid #BBBBBB;
+        margin: 0 5px 0 0;
+        -moz-border-radius:3px;
+        -webkit-border-radius:3px;
+        border-radius:3px;
+        -khtml-border-radius:3px;
+        text-align: left;        
+    }
+    fieldset.options input {
+        width: 20px;
+    }
+
+    form  ul {
+        list-style: none;
+        padding: 0;
+        margin: 5px;
+    }
+    form  ul li {
+        padding: 0;
+        margin-bottom: 5px;
+    }
+
+     button, a.button {
+            display: inline-block;
+            position: relative;
+            border:1px solid #bbb;
+            -moz-border-radius:3px;
+            -webkit-border-radius:3px;
+            border-radius:3px;
+            -khtml-border-radius:3px;
+            background: -moz-linear-gradient(100% 100% 90deg, #eee, #d5d5d5);
+            background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#eee), to(#d5d5d5));
+            background: -webkit-linear-gradient(#eee, #d5d5d5);
+            background: -o-linear-gradient(#eee, #d5d5d5);
+            color:#232d3d;
+            font-size:12px;
+            font-weight:bold;
+            padding:4px 10px;
+            margin:7px auto;
+            text-shadow:0px 1px 0px #fff;
+            cursor:pointer;
+            box-shadow:0px 1px 2px #ccc;
+            -moz-box-shadow:0px 1px 2px #ccc;
+            -webkit-box-shadow:0px 1px 2px #ccc;
+            text-align: center;
+            font-size: 14px;
+            text-decoration: none;
+    }
+    a.button {
+        display: block;
+        font-size: 20px;
+        margin: 30px auto;
+        max-width: 500px;
+    }
+    textarea.code {
+            border: 0;
+            background-color: #EEE;
+            background-image: none;
+            color: #222222;
+            font: 14px Arial;
+            display: inline;
+            width: 100%;
+            height: auto;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
-    <div class="content">
-        <div class="boundingBox">
-            <img src="./assets/sample_frankfurt.jpg" />
-            <img src="./assets/sample_wiesbaden.jpg" />
-            <img src="./assets/sample_palmengarten.jpg" />
+    <section>
+        <header>
+            <hgroup>
+                <h1>tEffects jQuery plugin</h1>
+                <h2>CSS3 transformation effects library with a shim for legacy browsers</h2>
+            </hgroup>
+        </header>
+        <article>
+            <p>The plugin allows you to convert simple markup into a slide-show with the set of fancy configurable transition effects.
+                The plugin tries to render the effects with CSS3 transitions. However if the browser does not support CSS3 the efects willbe achieved by JS.</p>
+            <p>Every available effect is encopsulated into a single module. So you do not have to violate YAGNI principle. Just remove redundant effect modules and leave the only code responding to your requirements.</p>
+            <a class="button" href="https://github.com/dsheiko/Transition-Effects-JS-Library">Download the latest version from GitHub</a>
+        </article>
+        <h2>Demo</h2>
+        <div class="canvas">
+            <div class="boundingBox">
+                <img src="./slides/sample_zakopane.jpg" />
+                <img src="./slides/sample_wurzburg.jpg" />
+                <img src="./slides/sample_keukenhof.jpg" />
+                <img src="./slides/sample_fussen.jpg" />
+            </div>
         </div>
+        <div class="toolbar">
         <button class="prev">Prev</button>
         <button class="next">Next</button>
-    </div>
+        </div>
+        <form>
+            <section class="column">
+            <fieldset class="effect">
+                <legend>Effect</legend>
+                <ul>
+                    <li><input id="e1" type="radio" checked="checked" name="effect" value="FadeInOut" /><label for="e1">FadeInOut</label></li>
+                    <li><input id="e2" class="dir" type="radio" name="effect" value="Jalousie" /><label for="e2">Jalousie</label></li>
+                    <li><input id="e3" class="dir" type="radio" name="effect" value="Ladder" /><label for="e3">Ladder</label></li>
+                    <li><input id="e4" class="dir" type="radio" name="effect" value="Scroll" /><label for="e4">Scroll</label></li>
+                    <li><input id="e5" class="dir" type="radio" name="effect" value="Deck" /><label for="e5">Deck</label></li>
+                    <li><input id="e8" class="dir" type="radio" name="effect" value="Jaw" /><label for="e8">Jaw</label></li>
+                    <li><input id="e6" class="grid" type="radio" name="effect" value="DiagonalCells" /><label for="e6">DiagonalCells</label></li>
+                    <li><input id="e7" class="grid" type="radio" name="effect" value="RandomCells" /><label for="e7">RandomCells</label></li>
+                </ul>
+            </fieldset>
+            </section>
+            <section>
+                <fieldset class="direction">
+                    <legend>Direction</legend>
+                    <ul>
+                        <li><input id="d2" type="radio" disabled="disabled" class="switchable dir" checked="checked" name="direction" value="horizontal" /><label for="d2">Horizontal</label></li>
+                        <li><input id="d1" type="radio" disabled="disabled" class="switchable dir" name="direction" value="vertical" /><label for="d1">Vertical</label></li>
+                    </ul>
+                </fieldset>
+                <fieldset class="options">
+                    <legend>Other options</legend>
+                    <ul>
+                        <li><label for="duration">Transition duration (s)</label>: <input type="text" name="duration" value="2" /></li>
+                        <li><label for="cols">Overlay columns</label>: <input type="text" class="switchable dir" disabled="disabled" name="cols" value="10" /></li>
+                        <li><label for="rows">Overlay label</label>: <input type="text" class="switchable dir" disabled="disabled" name="rows" value="10" /></li>
+                        <li><label for="dimension">Overlay dimension</label>: <input class="switchable grid" type="text" disabled="disabled" name="dimension" value="10" /></li>
+                    </ul>
+                </fieldset>
+            </section>
+        </form>
+        <article>
+            <h2>Usage and API</h2>
+
+            <h3>Step 1</h3>
+            <p>Including plugin scripts after jQuery (requires jQuery 1.4+):</p>
+
+            <div>
+                <textarea rows="3" class="code">
+<link href="./assets/t-effects.css" rel="stylesheet" media="all" />
+<script src="./js/jquery.a-queue.js" type="text/javascript"></script>
+<script src="./js/jquery.t-effects.js" type="text/javascript"></script>
+                </textarea>
+            </div>
+
+
+            <h3>Step 2</h3>
+            <p>To have slideshow running it is enough just to provide a placeholder within DOM with images to slide inside: </p>
+            <div>
+                <textarea rows="5" class="code">
+<div id="slideshow">
+    <img src="./slides/sample1.jpg" />
+    <img src="./slides/sample2.jpg" />
+    <img src="./slides/sample3.jpg" />
+</div>
+                </textarea>
+            </div>
+            <p>Though if you want to keep images elsewhere, they can be passed into the plugin through images option.</p>
+
+            <h3>Step 3</h3>
+            <p>Now here how the plugin can be initialized and enabled.</p>
+            <div>
+                <textarea rows="7" class="code">
+<script type="text/javascript">
+    $(document).ready(function(){
+        $('#slideshow').tEffects({
+           effect: 'FadeInOut'
+        }).enable();
+    });
+</script>
+                </textarea>
+            </div>
+
+            <h3>Step 4 (optional)</h3>
+            <p>The slide-show is running and can be navigated by arrows-keys, but you want to subscribe you own navigation controls. Well, you can do it like that:</p>
+            <div>
+                <textarea rows="11" class="code">
+$('#slideshow').tEffects({
+   effect: 'FadeInOut',
+   triggerNext: {
+       node: $('button.next'),
+       event: 'click'
+   },
+   triggerPrev: {
+       node: $('button.prev'),
+       event: 'click'
+   }
+}).enable();
+                </textarea>
+            </div>
+
+            <h3>Options</h3>
+            <p>...</p>
+
+            <h3>Events</h3>
+            <p>...</p>
+
+            <h3>Methods</h3>
+            <p>enable/disable</p>
+
+
+        </article>
+    </section>
     <script type="text/javascript">
     // Document is ready
-    $(document).bind('ready.app', function(){       
-       $('div.boundingBox').tEffects({
-           effect: "DiagonalCells", // Deck, DiagonalCells, RandomCells, Jaw, Jalousie, Ladder, Scroll, FadeInOut
-            /* method: "random", */
-           direction: "horizontal",
-           /* direction: "vertical",*/
-           duration: 3,
+    $(document).bind('ready.app', function(){
+       var options = {
+           effect: $('input[name=effect]:checked').val(),
+           direction: $('input[name=direction]:checked').val(),
+           transitionDuration: $('input[name=duration]').val(),
+           cols: $('input[name=cols]').val(),
+           rows: $('input[name=rows]').val(),
+           dimension: $('input[name=dimension]').val(),
            triggerNext: {
                node: $('button.next'),
                event: 'click'
@@ -38,7 +312,33 @@
                node: $('button.prev'),
                event: 'click'
            }
-       }).enable();
+       }, manager = $('div.boundingBox').tEffects(options).enable();
+
+       $('form fieldset.options input').bind('change', function(){
+           options.transitionDuration =  $('input[name=duration]').val();
+           options.cols = $('input[name=cols]').val();
+           options.rows = $('input[name=rows]').val();
+           options.dimension = $('input[name=dimension]').val();
+           manager.reset(options);
+       });
+
+       $('form input:radio').bind('change', function(){
+
+           if ($(this).hasClass('dir')) {
+               $('input.switchable.dir').removeAttr('disabled');
+           } else {
+               $('input.switchable.dir').attr('disabled', 'disabled');
+           }
+           if ($(this).hasClass('grid')) {
+               $('input.switchable.grid').removeAttr('disabled');
+           } else {
+               $('input.switchable.grid').attr('disabled', 'disabled');
+           }
+           
+           options.effect = $('input[name=effect]:checked').val();
+           options.direction = $('input[name=direction]:checked').val();
+           manager.reset(options);
+       });
     });
     </script>
 </body>

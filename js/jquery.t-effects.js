@@ -114,7 +114,7 @@ $.tEffects = function(settings) {
                 transitionDelay : 50, // ms
                 cols: 10,
                 rows: 10,
-                initalIndex: 0,
+                initalIndex: null,
                 dimension: 10,
                 method: DEFAULT, // can be random, diagonal (for now used only on Matrix)
                 controls: {
@@ -124,23 +124,28 @@ $.tEffects = function(settings) {
                 images: []
             },
             init: function() {
-                this.setup(settings);
-                this.node.images = this.settings.images.length ? this.settings.images 
-                    : this.node.boundingBox.find("img");
-                this.node.boundingBox.addClass('te-boundingBox');                
+                this.set(settings);
+                this.node.boundingBox.addClass('te-boundingBox');
                 this.checkEntryConditions();
                 this.updateTriggersState();
-                // Implementor will be available as soon as the first image of the prpvided list loaded
-                this.render(function(){
-                    // Obtain an instance of implementor
-                    _implementor = new $.tEffects[settings.effect](this);
-                    _implementor.init();
-                });
+                // Implementor will be available as soon as the first image of the provided list loaded
+                this.render();
             },
-            setup: function(settings) {
-                // Settings
+            set: function(settings) {
                 $.extend(this.settings, settings);
-                this.index = this.settings.initalIndex;
+                this.index = this.settings.initalIndex !== null ? this.settings.initalIndex : this.index;                
+                this.node.images = this.settings.images.length ? this.settings.images : this.node.images;
+                this.node.images = this.node.images.length === 0 ? this.node.boundingBox.find("img") : this.node.images; 
+            },
+            reset : function(settings) {
+                this.set(settings);
+                this.initImplementor();
+            },
+            initImplementor : function() {
+                this.node.boundingBox.html('');
+                // Obtain an instance of implementor
+                _implementor = new $.tEffects[this.settings.effect](this);
+                _implementor.init();
             },
             checkEntryConditions: function() {
                 if (!this.node.images.length) {
@@ -150,10 +155,10 @@ $.tEffects = function(settings) {
                     settings.effect = "Default";
                 }
             },
-            render : function(callback) {
+            render : function() {
 
                     var manager = this, run = function(e){
-                       $(this).data('state', 'loaded');
+                       $(this).addClass('te-loaded');
                        // Now since we know the real size of the image (that is supposed
                        // to be size of every enlisted image), we can specify relative vars.
                        manager.canvas = {
@@ -168,14 +173,13 @@ $.tEffects = function(settings) {
                            manager.renderControls();
                        }
                        manager.node.images.css({'visibility' : 'visible'});
-                       // Remove images
-                       manager.node.boundingBox.html('');
+                       
                        if (_implementor === null) {
-                            callback.apply(manager, arguments);
+                            manager.initImplementor();
                        }
                    }
                    // We know image size only when have it fully loaded
-                   if ($(this.node.images[this.index]).data('state') === 'loaded') {
+                   if ($(this.node.images[this.index]).hasClass('te-loaded')) {
                         run.call($(this.node.images[this.index]));
                    } else {
                        // Workaround for image load event binding with IE bug
@@ -183,7 +187,6 @@ $.tEffects = function(settings) {
                           return val + "?v=" + (new Date()).getTime()
                         }).bind("load", this, run);
                    }
-
             },
             isset : function(val) {
                 return (typeof val !== "undefined");
@@ -219,6 +222,7 @@ $.tEffects = function(settings) {
                 if (typeof settings.triggerPrev !== "undefined") {
                     $(settings.triggerPrev.node).bind(settings.triggerPrev.event, this, _handler.goPrev);
                 }
+                return this;
             },
             disable: function() {
                 $(document).unbind('keydown', this, _handler.pressKey);
@@ -228,6 +232,7 @@ $.tEffects = function(settings) {
                 if (typeof settings.triggerPrev !== "undefined") {
                     $(settings.triggerPrev.node).unbind(settings.triggerPrev.event, _handler.goPrev);
                 }
+                return this;
             },
             getImage: function(key) {
                 if (typeof key === "string") {
@@ -771,13 +776,13 @@ $.tEffects.Jalousie = function(manager) {
 }
 
 $.tEffects.RandomCells = function(manager) {
-    manager.settings.method = 'random';
+    var _method = 'random';
     return $.tEffects.DiagonalCells(manager);
 };
 
 $.tEffects.DiagonalCells = function(manager) {
     var _manager = manager, _cell, _cells, _dimension = _manager.settings.dimension, _map = [], 
-        _overlay, _reverse = false;
+        _overlay, _reverse = false, _method = typeof _method !== "undefined" ? _method : "default";
     return {
         init: function() {
             _cell = {
@@ -816,7 +821,7 @@ $.tEffects.DiagonalCells = function(manager) {
 
                 for (var r = 0; r < _dimension; r++) {
                     for (var c = 0; c < _dimension; c++) {
-                        if (_manager.settings.method === DEFAULT) {
+                        if (_method === DEFAULT) {
                             delay = Math.max(c, r)  * (_manager.settings.transitionDelay * 2);
                         } else {
                             delay = Math.floor(Math.random() * _dimension 
