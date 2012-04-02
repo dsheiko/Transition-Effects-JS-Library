@@ -767,13 +767,12 @@ $.tEffects.Jalousie = function(manager) {
 }
 
 $.tEffects.RandomCells = function(manager) {
-    var _method = 'random';
-    return $.tEffects.DiagonalCells(manager);
+    return $.tEffects.DiagonalCells(manager, 'random');
 };
 
-$.tEffects.DiagonalCells = function(manager) {
+$.tEffects.DiagonalCells = function(manager, _method) {
     var _manager = manager, _cell, _cells, _dimension = _manager.settings.dimension, _map = [], 
-        _overlay, _reverse = false, _method = typeof _method !== "undefined" ? _method : "default";
+        _overlay, _reverse = false, _method = typeof _method !== "undefined" ? _method : DEFAULT;
     return {
         init: function() {
             _cell = {
