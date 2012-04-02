@@ -1,0 +1,23 @@
+{
+  "name": "t-effects",
+  "title": "Simple HTML5 Form Shim",
+  "version": "1.0",
+  "author": "Dmitry Sheiko",
+  "description": "CSS3 transformation effects library with a shim for legacy browsers",
+  "homepage": "https://github.com/dsheiko/Transition-Effects-JS-Library",
+  "licenses": [
+   {
+       "type": "GPLv2",
+       "url": "http://www.example.com/licenses/gpl.html"
+   }],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dsheiko/Transition-Effects-JS-Library"
+  },
+  "main": "./js/jquery.t-effects.js",
+  "dependencies": {
+      'jquery.a-queue.js': 'Asynchronous queue'
+  },
+  "engines": {
+  }
+}
