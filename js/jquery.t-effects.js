@@ -151,8 +151,8 @@ $.tEffects = function(settings) {
                 }
             },
             render : function(callback) {
-                    var run = function(e){
-                       var manager = e.data;
+
+                    var manager = this, run = function(e){
                        $(this).data('state', 'loaded');
                        // Now since we know the real size of the image (that is supposed
                        // to be size of every enlisted image), we can specify relative vars.
@@ -175,8 +175,8 @@ $.tEffects = function(settings) {
                        }
                    }
                    // We know image size only when have it fully loaded
-                   if (this.node.images[this.index].data('state') === 'loaded') {
-                        run();
+                   if ($(this.node.images[this.index]).data('state') === 'loaded') {
+                        run.call($(this.node.images[this.index]));
                    } else {
                        // Workaround for image load event binding with IE bug
                        $(this.node.images[this.index]).attr('src', function(i, val) {
