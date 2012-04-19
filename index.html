@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="tEffects : Provides such effect as fade, blur, jalousie, scroll, ladder, zoom and others. Shims CSS3 effects on legacy browsers  " />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>tEffects</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/dsheiko/Transition-Effects-JS-Library">Fork Me on GitHub</a>
+
+          <h1 id="project_title">tEffects</h1>
+          <h2 id="project_tagline">Provides such effect as fade, blur, jalousie, scroll, ladder, zoom and others. Shims CSS3 effects on legacy browsers  </h2>
+
+          <section id="downloads">
+            <a class="zip_download_link" href="https://github.com/dsheiko/Transition-Effects-JS-Library/zipball/master">Download this project as a .zip file</a>
+            <a class="tar_download_link" href="https://github.com/dsheiko/Transition-Effects-JS-Library/tarball/master">Download this project as a tar.gz file</a>
+          </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <ul>
+<li>The project site: <a href="https://github.com/dsheiko/Transition-Effects-JS-Library">https://github.com/dsheiko/Transition-Effects-JS-Library</a></li>
+<li>The demo site: <a href="http://demo.dsheiko.com/teffects/">http://demo.dsheiko.com/teffects/</a></li>
+</ul><p>The plugin allows you to convert simple markup into a slide-show with the set of fancy configurable transition effects. The plugin tries to render the effects with CSS3 transitions. However if the browser does not support CSS3 the efects willbe achieved by JS.</p>
+
+<p>Every available effect is encopsulated into a single module. So you do not have to violate YAGNI principle. Just remove redundant effect modules and leave the only code responding to your requirements.</p>
+
+<h3>How to use</h3>
+
+<h4>Step 1</h4>
+
+<p>Including plugin scripts after jQuery (requires jQuery 1.4+):</p>
+
+<pre><code>&lt;link href="./assets/t-effects.css" rel="stylesheet" media="all" /&gt;
+&lt;script src="./js/jquery.a-queue.js" type="text/javascript"&gt;&lt;/script&gt;
+&lt;script src="./js/jquery.t-effects.js" type="text/javascript"&gt;&lt;/script&gt;
+</code></pre>
+
+<h4>Step 2</h4>
+
+<p>To have slideshow running it is enough just to provide a placeholder within DOM with images to slide inside:</p>
+
+<pre><code>&lt;div id="slideshow"&gt;
+    &lt;img src="./slides/sample1.jpg" /&gt;
+    &lt;img src="./slides/sample2.jpg" /&gt;
+    &lt;img src="./slides/sample3.jpg" /&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>Though if you want to keep images elsewhere, they can be passed into the plugin through images option.</p>
+
+<h4>Step 3</h4>
+
+<p>Now here how the plugin can be initialized and enabled.</p>
+
+<pre><code>&lt;script type="text/javascript"&gt;
+    $(document).ready(function(){
+        $('#slideshow').tEffects({
+           effect: 'FadeInOut'
+        }).enable();
+    });
+&lt;/script&gt;
+</code></pre>
+
+<h4>Step 4 (optional)</h4>
+
+<p>The slide-show is running and can be navigated by arrows-keys, but you want to subscribe you own navigation controls. Well, you can do it like that:</p>
+
+<pre><code>$('#slideshow').tEffects({
+    effect: 'FadeInOut',
+    triggerNext: {
+           node: $('button.next'),
+           event: 'click'
+    },
+    triggerPrev: {
+           node: $('button.prev'),
+           event: 'click'
+    }
+}).enable();
+</code></pre>
+
+<h4>Available Options</h4>
+
+<p>effect
+    transition effect: Default, FadeInOut, Jalousie, Ladder, Scroll, Deck, Jaw, DiagonalCells, RandomCells </p>
+
+<p>direction
+    transition direction: vertical or horizontal</p>
+
+<p>transitionDuration
+    duration of transition in seconds</p>
+
+<p>transitionDelay
+    delay between iterations in milliseconds</p>
+
+<p>rows
+    number of images slices for vertical direction</p>
+
+<p>cols
+    number of images slices for horizontal direction</p>
+
+<p>dimension
+    number of columns and rows on a grid</p>
+
+<p>initalIndex
+    forces the image of given index be current</p>
+
+<p>triggerNext
+    the trigger for Next-image event: { node: node, event: 'click' }</p>
+
+<p>triggerPrev
+    the trigger for Previous-image event: { node: node, event: 'click' }</p>
+
+<p>controls
+    images direct controls: { template: 'button html', appendTo: toolbar node }</p>
+
+<p>images
+    array with images when they passed manually. E.g. images: $('div.storage &gt; img')</p>
+
+<h4>Events</h4>
+
+<p>start-transition.t-effect
+    fired staight before transition applied. Handler gets current image index as an argument.</p>
+
+<p>end-transition.t-effect
+    fired staight after transition applied. Handler gets current image index as an argument.</p>
+
+<h4>Methods</h4>
+
+<p>enable
+    enables arrow-keys and given controls. </p>
+
+<p>disable
+    disables arrow-keys and given controls. E.g. you have the slide show on an overlay. When overlay is hidden, you use disable method to unsubscribe controls. When the overlay is visible again, use disable method.</p>
+
+<p>reset
+    you can reset options on a running tEffetcs instance </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">tEffects maintained by <a href="https://github.com/dsheiko">dsheiko</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
