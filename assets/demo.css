@@ -176,6 +176,53 @@ body > header a.fork:hover {
     color: white;
 }
 
+ol, ul {
+    list-style: none outside none;
+}
+.sharebar {
+    display: none;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    bottom: -40px;
+}
+:root .sharebar {
+    display: block;
+}
+.sharebar li {
+    display: block;
+    float: left;
+    height: 32px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    width: 32px;
+    background-repeat: no-repeat;
+    background-color: white;
+    border-radius: 12px;
+    -moz-box-shadow: 0 0 10px #000;
+    -webkit-box-shadow: 0 0 10px #000;
+    -o-box-shadow: 0 0 10px #000;
+    -ms-box-shadow: 0 0 10px #000;
+    box-shadow: 0 0 10px #000;
+    cursor: pointer;
+    border: 1px solid white;
+}
+.sharebar li.facebook {
+    background-image: url("http://demo.dsheiko.com/share/assets/social-icons/facebook_32.png");
+}
+.sharebar li.twitter {
+    background-image: url("http://demo.dsheiko.com/share/assets/social-icons/twitter_32.png");
+}
+.sharebar li.google {
+    background-image: url("http://demo.dsheiko.com/share/assets/social-icons/google_32.png");
+}
+.sharebar li.linkedin {
+    background-image: url("http://demo.dsheiko.com/share/assets/social-icons/linkedin_32.png");
+}
+.sharebar li:hover {
+    background-position: 0 -32px;
+}
+
 textarea.code {
     border: 0;
     background-color: #ddd;
