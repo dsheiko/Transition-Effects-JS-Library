@@ -61,7 +61,7 @@
                             <li><input id="e2" class="dir" type="radio" name="effect" value="Jalousie" /><label for="e2">Jalousie</label></li>
                             <li><input id="e3" class="dir" type="radio" name="effect" value="Ladder" /><label for="e3">Ladder</label></li>
                             <li><input id="e4" class="dir" type="radio" name="effect" value="Scroll" /><label for="e4">Scroll</label></li>
-                            <li><input id="e5" class="dir" type="radio" name="effect" value="Deck" /><label for="e5">Deck</label></li>
+                            <li><input id="e5" class="dir" type="radio" name="effect" value="Zipper" /><label for="e5">Zipper</label></li>
                             <li><input id="e8" class="dir" type="radio" name="effect" value="Jaw" /><label for="e8">Jaw</label></li>
                             <li><input id="e6" class="grid" type="radio" name="effect" value="DiagonalCells" /><label for="e6">DiagonalCells</label></li>
                             <li><input id="e7" class="grid" type="radio" name="effect" value="RandomCells" /><label for="e7">RandomCells</label></li>
@@ -152,7 +152,7 @@ triggerPrev: {
                     <dt>effect</dt>
                     <dd>transition effect: <var>Default</var>, <var>FadeInOut</var>,
                         <var>Jalousie</var>, <var>Ladder</var>, <var>Scroll</var>,
-                        <var>Deck</var>, <var>Jaw</var>, <var>DiagonalCells</var>,
+                        <var>Zipper</var>, <var>Jaw</var>, <var>DiagonalCells</var>,
                         <var>RandomCells</var>
                     </dd>
 
@@ -231,6 +231,8 @@ triggerPrev: {
     // Document is ready
     $(document).bind('ready.app', function(){
        var options = {
+           width: 525,
+           height: 700,
            effect: $('input[name=effect]:checked').val(),
            direction: $('input[name=direction]:checked').val(),
            transitionDuration: $('input[name=duration]').val(),

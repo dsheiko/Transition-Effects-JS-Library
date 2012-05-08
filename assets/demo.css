@@ -6,7 +6,7 @@ div.boundingBox {
 div.toolbar {
     text-align: center;
 }
-div.boundingBox img {
+div.boundingBox > * {
     visibility: hidden;
 }
 form {
