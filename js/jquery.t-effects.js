@@ -68,7 +68,7 @@ var NEXT = "next",
         }
     },
     AnimatorCollection = function() {
-        var _animators = [];
+        var _animators = [], _index = 0;
         return {
             push: function(libraryInstace) {
                 _animators.push(libraryInstace);
@@ -80,10 +80,19 @@ var NEXT = "next",
                 instance.focus(index);
             },
             animate: function(index) {
-                _animators[index].animate();
+                if (index >= _animators.length) {
+                    _index = (index + 1) % _animators.length;
+                }
+                if (_animators.length === 1) {
+                    _index = 0;
+                }
+                this.get(_index).updateState(index);
             },
             get: function(index) {
-                return typeof index === "undefined" ? _animators : _animators[index];
+                return typeof index === "undefined" ? _animators[_index] : _animators[index];
+            },
+            getList: function(index) {
+                return _animators;
             }
         }
     },
@@ -129,8 +138,7 @@ var NEXT = "next",
             e.preventDefault();
             if ($(this).hasClass("te-trigger-inactive")) {return false;}
             var manager = e.data;
-            _animatorCollection.get(0).updateState(manager.index + 1);
-            //manager.invoke.apply(_implementors, [manager.index + 1]);
+            _animatorCollection.animate(e.data.index + 1);
             manager.index ++;
             manager.updateTriggersState();
         },
@@ -138,7 +146,7 @@ var NEXT = "next",
             e.preventDefault();
             if ($(this).hasClass("te-trigger-inactive")) {return false;}
             var manager = e.data;
-            manager.invoke.apply(_implementors, [manager.index - 1]);
+            _animatorCollection.animate(e.data.index - 1);
             manager.index --;
             manager.updateTriggersState();
         },
@@ -146,7 +154,7 @@ var NEXT = "next",
             var manager = e.data, index = $(this).data("index");
             e.preventDefault();
             if ($(this).hasClass("te-trigger-inactive")) {return false;}
-            manager.invoke.apply(_implementors, [index]);
+            _animatorCollection.animate(index);
             manager.index = index;
             manager.updateTriggersState();
         }
@@ -223,6 +231,9 @@ var NEXT = "next",
 
             populateAnimatorCollection : function() {
                 var manager = this;
+                if (!Util.isPropertySupported('transition')) {
+                    return _animatorCollection.push(new $.tEffects.Fallback(manager));
+                }
                 $.each(this.settings.effect, function(i, effect){
                     if (typeof $.tEffects[effect] === "undefined") {
                         throw "The implementation library of " + this.settings.effect + " effect not found";
@@ -233,20 +244,19 @@ var NEXT = "next",
             },
 
             render: function() {
-                var manager = this,
-                    boundingBox =
+                var boundingBox =
                         this.node.boundingBox.addClass('te-boundingBox').html('');
 
                 // Collect markup required for requested affects
-                $.each(_animatorCollection.get(), function(i, instance) {
+                $.each(_animatorCollection.getList(), function(i, instance) {
                     $.extend(instance, AnimatorMixins);
                     instance.renderBoundingBox(boundingBox);
                     instance.init();
                 });
                 boundingBox.find("> .te-layer").css({"visibility": "visible"});
                 this.css.commit();
-                // ???
-                _animatorCollection.get(0).focus().resetState();
+                // Initilize the first animator
+                _animatorCollection.get().focus().resetState();
             },
 
             renderer: {
@@ -285,7 +295,12 @@ var NEXT = "next",
                     this.node.controls[i].data("index", i).bind('click.t-effect', this, _handler.goChosen);
                 }
             },
-
+            triggerStartEvent : function() {
+                $(document).trigger('start-transition.t-effect', [this.index]);
+            },
+            triggerEndEvent : function() {
+                $(document).trigger('end-transition.t-effect', [this.index]);
+            },
             isset : function(val) {
                 return (typeof val !== "undefined");
             },
@@ -304,17 +319,6 @@ var NEXT = "next",
                 }
             },
 
-
-
-            invoke: function(index) {
-//                var method = "update" + (Util.isPropertySupported('transition') ? '' : 'Fallback');
-//                if (typeof this[method] !== "undefined") {
-//                    $(document).trigger('start-transition.t-effect', [index]);
-//                    this[method](index, function(){
-//                        $(document).trigger('end-transition.t-effect', [index]);
-//                    });
-//                }
-            },
             enable: function() {
                 $(document).bind('keydown', this, _handler.pressKey);
                 if (typeof settings.triggerNext !== "undefined") {
@@ -414,26 +418,19 @@ $.tEffects.Fallback  = function(manager) {
     var _manager = manager;
     return {
         init: function() {
-            _manager.attachSlideTo("boundingBox");
-            if (Util.isPropertySupported('transform')) {
-                this.overlay
-                    .addClass('te-transition')
-                    .css3({
-                        'transition-duration': manager.settings.transitionDuration + "s",
-                        'transition-property': "opacity",
-                        'opacity' : "0"
-                    });
-            }
+            this.renderUnderlay();
+            this.renderOverlay();
+            this.node.overlay.hide();
         },
-        update: function(index, callback) {
-            var isSolid = this.overlay.css('opacity');
-            if (isSolid === "0") {
-                _manager.attachSlideTo(this.overlay, index);
-            } else {
-                _manager.attachSlideTo("boundingBox", index);
-            }
-            this.overlay.css3('opacity', (isSolid === "0") ? '1.0' : '0');
-            window.setTimeout(callback, manager.settings.transitionDuration * 1000);
+        resetState: function() {
+            _manager.triggerEndEvent();
+            _manager.putSlideOn(this.node.underlay);
+            this.node.overlay.hide();
+        },
+        updateState: function(index, callback) {
+            _manager.triggerStartEvent();
+            _manager.putSlideOn(this.node.overlay, index);
+            this.node.overlay.fadeIn('slow', $.proxy(this.resetState, this));
         }
     }
 }
@@ -460,10 +457,12 @@ $.tEffects.FadeInOut = function(manager) {
             this.node.overlay.addClass("te-reset-fadein");
         },
         resetState: function() {
+            _manager.triggerEndEvent();
             _manager.putSlideOn(this.node.underlay);
             this.node.overlay.removeClass('te-update-fadein');
         },
         updateState: function(index, callback) {
+            _manager.triggerStartEvent();
             _manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-fadein');
             this.bindComplete(this.node.overlay);
