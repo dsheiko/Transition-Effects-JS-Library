@@ -26,13 +26,23 @@ var NEXT = "next",
             return (('Webkit' + _prop) in document.body.style
                 || ('Moz' + _prop) in document.body.style
                 || ('O' + _prop) in document.body.style
-                || ('Ms' + _prop) in document.body.style
+                || ('ms' + _prop) in document.body.style
+                || ('Khtml' + _prop) in document.body.style
+                || ('Icab' + _prop) in document.body.style
                 || prop in document.body.style);
         }
     },
     CssHelper = function() {
         var _stylesheet = '',
-            _vendorPrefs = ["-moz-", "-webkit-", "-o-", "-ms-", ""],
+            _vendorPrefs = [
+                "-moz-", /* Gecko (Firefox, Camino…) */
+                "-webkit-", /* Webkit (Safari, Chrome, Shiira…) */
+                "-o-", /* Presto (Opera) */
+                "-ms-", /* Trident (Windows Internet Explorer, Avant Browser…) */
+                "-khtml-", /* Khtml (Konqueror) */
+                "-icab", /* (iCab) */
+                ""
+            ],
             _prefexedProps = ["transform", "animation"],
             _getRuleNormalized = function(ruleSet) {
                 var out = '';
@@ -449,7 +459,6 @@ $.tEffects.Fallback  = function(manager) {
             this.node.overlay.hide();
         },
         updateState: function(index) {
-            _manager.triggerStartEvent();
             _manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.fadeIn('slow', $.proxy(this.reset, this));
         }
@@ -477,9 +486,10 @@ $.tEffects.FadeInOut = function(manager) {
             this.node.overlay.addClass("te-reset-fadein");
         },
         resetState: function() {
+            _manager.putSlideOn(this.node.underlay);
             this.node.overlay.removeClass('te-update-fadein');
         },
-        updateState: function(index, callback) {
+        updateState: function(index) {
             _manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-fadein');
             this.bindComplete(this.node.overlay);
@@ -487,19 +497,33 @@ $.tEffects.FadeInOut = function(manager) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-$.tEffects.Zipper = function(manager) {
-    var _manager = manager, _dir = _manager.settings.direction, _overlay, _reverse = false;
+$.tEffects.Deck = function(manager) {
+    var _manager = manager, _overlay, _reverse = false;
     return {
         init: function() {
+            var reverse = _manager.settings.direction === RIGHTTOLEFT
+                || _manager.settings.direction === BOTTOMTOTOP,
+                isHorizontal = _manager.settings.direction === RIGHTTOLEFT
+                || _manager.settings.direction === LEFTTORIGHT;
+
+            _manager.css
+                .assignKeyframes("FadeIn", {
+                    "from": {
+                        "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (reverse ? "0%" : "100%") + ")"
+                    },
+                    "to": {"opacity" : "1"}
+                })
+                .assignRule(".te-reset-fadein", {
+                    "opacity" : "0"
+                })
+                .assignRule(".te-update-fadein", {
+                    "animation" : "FadeIn 1s ease-in-out",
+                    "opacity" : "1"
+                });
+
+            this.renderUnderlay();
+            this.renderOverlay();
+
             _manager.attachSlideTo("boundingBox");
 
             _overlay = _manager.renderOverlay();
@@ -508,7 +532,10 @@ $.tEffects.Zipper = function(manager) {
                 .css3({'transition-duration': manager.settings.transitionDuration + "s"});
 
         },
-        update: function(index, callback) {
+        resetState: function() {
+            this.node.overlay.removeClass('te-update-fadein');
+        },
+        updateState: function(index) {
             _manager
                 .attachSlideTo("boundingBox", (!_reverse ? index : undefined))
                 .attachSlideTo(_overlay, (_reverse ? index : undefined));
