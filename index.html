@@ -231,8 +231,9 @@ triggerPrev: {
     // Document is ready
     $(document).bind('ready.app', function(){
         var options = {
-           effect: "Deck",
-           direction: "left to right",
+           effect: "Scroll",
+           //direction: "left to right",
+           direction: "right to left",
            triggerNext: {
                node: $('button.next'),
                event: 'click'

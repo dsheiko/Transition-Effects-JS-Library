@@ -21,24 +21,10 @@ var NEXT = "next",
     DEFAULT = 'default',
     LEFT_ARROW_CODE = 37,
     RIGHT_ARROW_CODE = 39,
-    Util = {
-        ucfirst : function(str) {
-            str += '';
-            return str.charAt(0).toUpperCase() + (str.substr(1).toLowerCase());
-        },
-        isPropertySupported: function(prop) {
-            var _prop = Util.ucfirst(prop);
-            return (('Webkit' + _prop) in document.body.style
-                || ('Moz' + _prop) in document.body.style
-                || ('O' + _prop) in document.body.style
-                || ('ms' + _prop) in document.body.style
-                || ('Khtml' + _prop) in document.body.style
-                || ('Icab' + _prop) in document.body.style
-                || prop in document.body.style);
-        }
-    },
+
     CssHelper = function() {
         var _stylesheet = '',
+            _DoesBrowserSupportCss3 = false,
             _vendorPrefs = [
                 "-moz-", /* Gecko (Firefox, Camino…) */
                 "-webkit-", /* Webkit (Safari, Chrome, Shiira…) */
@@ -61,9 +47,46 @@ var NEXT = "next",
                     }
                 }
                 return out;
+            },
+            _isPropertySupported = function(prop) {
+                var vendorProp, supportedProp,
+                capProp = prop.charAt(0).toUpperCase() + prop.slice(1),
+                prefixes = [ "Moz", "Webkit", "O", "ms", "Khtml", "Icab" ],
+                div = document.createElement( "div" );
+                if ( prop in div.style ) {
+                    supportedProp = prop;
+                } else {
+                    for ( var i = 0; i < prefixes.length; i++ ) {
+                        vendorProp = prefixes[i] + capProp;
+                        if ( vendorProp in div.style ) {
+                            supportedProp = vendorProp;
+                            break;
+                        }
+                    }
+                }
+                div = null;
+                $.support[prop] = supportedProp
+                return supportedProp;
+            };
+
+            // Implements cssHooks (http://api.jquery.com/jQuery.cssHooks/)
+            var transformPrefixed = _isPropertySupported("transform");
+            if (transformPrefixed && transformPrefixed !== "transform") {
+                $.cssHooks.transform = {
+                    get: function( elem, computed, extra ) {
+                        return $.css(elem, transformPrefixed);
+                    },
+                    set: function( elem, value) {
+                        elem.style[transformPrefixed] = value;
+                    }
+                };
             }
+
         return {
-            commit: function(rule) {
+            isTransitionsSupported : function() {
+                return _isPropertySupported("transform");
+            },
+            commit: function() {
                 $("body").append('<style type="text/css">' + _stylesheet + '</style>');
             },
             assignRule: function(selector, ruleSet) {
@@ -119,6 +142,11 @@ var NEXT = "next",
     },
     AnimatorMixins = {
         node: {},
+        renderSlider: function() {
+            this.node.slider = $('<div class="te-slider te-transition"><!-- --></div>')
+            .appendTo(this.node.boundingBox);
+            return this;
+        },
         renderOverlay: function() {
             this.node.overlay = $('<div class="te-overlay"></div>').appendTo(this.node.boundingBox);
             return this;
@@ -250,8 +278,8 @@ var NEXT = "next",
             },
             checkBoundinbBoxSize: function() {
                 if (!this.settings.width || !this.settings.height) {
-                    this.settings.width = this.node.boundingBox.width;
-                    this.settings.height = this.node.boundingBox.height;
+                    this.settings.width = this.node.boundingBox.width();
+                    this.settings.height = this.node.boundingBox.height();
                 }
             },
             checkEntryConditions: function() {
@@ -266,7 +294,7 @@ var NEXT = "next",
 
             populateAnimatorCollection : function() {
                 var manager = this;
-                if (!Util.isPropertySupported('transition')) {
+                if (!this.css.isTransitionsSupported()) {
                     return _animatorCollection.push(new $.tEffects.Fallback(manager));
                 }
                 $.each(this.settings.effect, function(i, effect){
@@ -404,23 +432,6 @@ var NEXT = "next",
     return _manager;
 };
 
-// @TODO: to get rid of it
-$.fn.css3 = function(prop, val) {
-    var map = {}, css = typeof prop === "object" ? prop :
-        (function(){var css = {};ss[prop] = val;return css;}());
-
-    $.each(css, function(prop, val){
-        map[prop] =
-        map['-moz-' + prop] =
-        map['-ms-' + prop] =
-        map['-o-' + prop] =
-        map['-webkit-' + prop] = val;
-    });
-    return $(this).css(map);
-}
-
-
-
 
 
 $.fn.tEffects = function(settings) {
@@ -552,29 +563,38 @@ $.tEffects.Deck = function(manager) {
 
 
 $.tEffects.Scroll = function(manager) {
-    var _manager = manager, _cell = [], _dir = _manager.settings.direction, _slider;
-    return {
-        init: function() {
-            _cell = _manager.getLinearGridCellSize();
-            _manager.attachSlideTo("boundingBox");
+    var _manager = manager,
+        _sliderWidth = _manager.settings.width * _manager.node.slides.length,
+        _isHorizontal = _manager.settings.direction === RIGHTTOLEFT
+                || _manager.settings.direction === LEFTTORIGHT,
+        _getNewPositionRule = function(index) {
+            var offset = index *
+                (_isHorizontal ? _manager.settings.width : _manager.settings.height);
 
-            _slider = $('<div class="te-slider te-transition"><!-- --></div>')
-                .appendTo(_manager.node.boundingBox);
-            _slider
+            return "translate" + (_isHorizontal
+                ? "X" : "Y") + "(-" + offset + "px)";
+        };
+    return {
+         init: function() {
+            this.renderSlider();
+            this.node.slider
                 .append(_manager.node.slides.clone())
-                .css("width", (_manager.canvas.width * _manager.node.slides.length) + _manager.node.slides.length)
+                .css("width", _sliderWidth)
                 .find("img").css({
-                    "display": (_dir === HORIZONTAL ? "inline" : "block"),
-                    "visibility": "visible"
+                    "display": (_isHorizontal ? "inline" : "block")
                 });
         },
-        update: function(index, callback) {
-            _slider.css3("transform", "translate" + (_dir === HORIZONTAL
-                ? "X" : "Y") + "(-" + (index * (_dir === HORIZONTAL
-                ? _manager.canvas.width : _manager.canvas.height)) + "px)");
-            window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
+        resetState: function() {
         },
-        updateFallback: function(index, callback) {
+        updateState: function(index) {
+            this.node.slider.css("transform", _getNewPositionRule(index));
+        }
+    }
+}
+
+
+/*
+ updateFallback: function(index, callback) {
              var initX = _manager.index * _manager.canvas.width,
                  offsetX = (index * _manager.canvas.width - initX),
                  initY = _manager.index * _manager.canvas.height,
@@ -594,9 +614,7 @@ $.tEffects.Scroll = function(manager) {
                 delay: _manager.settings.transitionDelay,
                 scope: this}).run();
         }
-    }
-}
-
+ */
 
 $.tEffects.Ladder = function(manager) {
     var _manager = manager, _cell, _cells, _dir = _manager.settings.direction, _overlay,
