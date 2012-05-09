@@ -11,6 +11,11 @@
 
 var NEXT = "next",
     PREV = "prev",
+    BOTTOMTOTOP = "bottom to top",
+    TOPTOBOTTOM = "top to bottom",
+    LEFTTORIGHT = "left to right",
+    RIGHTTOLEFT = "right to left",
+
     VERTICAL = "vertical",
     HORIZONTAL = "horizontal",
     DEFAULT = 'default',
@@ -141,6 +146,8 @@ var NEXT = "next",
         },
         animate: function(index) {
             $(document).trigger('start-transition.t-effect', [index]);
+            this.resetState(); // Just for the case when animation was interrupted
+            //  and animationEnd event never happened
             this.focus().updateState(index);
         },
         bindComplete: function(node) {
@@ -397,6 +404,7 @@ var NEXT = "next",
     return _manager;
 };
 
+// @TODO: to get rid of it
 $.fn.css3 = function(prop, val) {
     var map = {}, css = typeof prop === "object" ? prop :
         (function(){var css = {};ss[prop] = val;return css;}());
@@ -410,6 +418,10 @@ $.fn.css3 = function(prop, val) {
     });
     return $(this).css(map);
 }
+
+
+
+
 
 $.fn.tEffects = function(settings) {
     settings.boundingBox = $(this);
@@ -498,7 +510,7 @@ $.tEffects.FadeInOut = function(manager) {
 }
 
 $.tEffects.Deck = function(manager) {
-    var _manager = manager, _overlay, _reverse = false;
+    var _manager = manager;
     return {
         init: function() {
             var reverse = _manager.settings.direction === RIGHTTOLEFT
@@ -507,77 +519,33 @@ $.tEffects.Deck = function(manager) {
                 || _manager.settings.direction === LEFTTORIGHT;
 
             _manager.css
-                .assignKeyframes("FadeIn", {
+                .assignKeyframes("Deck", {
                     "from": {
                         "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (reverse ? "0%" : "100%") + ")"
                     },
-                    "to": {"opacity" : "1"}
+                    "to": {
+                        "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (!reverse ? "0%" : "100%") + ")"
+                    }
                 })
-                .assignRule(".te-reset-fadein", {
-                    "opacity" : "0"
+                .assignRule(".te-reset-deck", {
+                    "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (reverse ? "0%" : "100%") + ")"
                 })
-                .assignRule(".te-update-fadein", {
-                    "animation" : "FadeIn 1s ease-in-out",
-                    "opacity" : "1"
+                .assignRule(".te-update-deck", {
+                    "animation" : "Deck 1s ease-in-out",
+                    "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (!reverse ? "0%" : "100%") + ")"
                 });
 
             this.renderUnderlay();
             this.renderOverlay();
-
-            _manager.attachSlideTo("boundingBox");
-
-            _overlay = _manager.renderOverlay();
-            _overlay
-                .addClass('te-transition')
-                .css3({'transition-duration': manager.settings.transitionDuration + "s"});
-
         },
         resetState: function() {
-            this.node.overlay.removeClass('te-update-fadein');
+            _manager.putSlideOn(this.node.underlay);
+            this.node.overlay.removeClass('te-update-deck');
         },
         updateState: function(index) {
-            _manager
-                .attachSlideTo("boundingBox", (!_reverse ? index : undefined))
-                .attachSlideTo(_overlay, (_reverse ? index : undefined));
-
-            _overlay.css3({"transform":  "translate" + (_dir === HORIZONTAL
-                    ? "X" : "Y") + "(" + (_reverse ? "0%" : "100%") + ")"});
-
-            _reverse = !_reverse;
-            window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
-        },
-        updateFallback: function(index, callback) {
-             var iterations = 10;
-             $.aQueue.add({
-                startedCallback: function(){
-                    _overlay.css('visibility', 'visible');
-                    _manager
-                        .attachSlideTo("boundingBox", (!_reverse ? index : undefined))
-                        .attachSlideTo(_overlay, (_reverse ? index : undefined));
-                },
-                iteratedCallback: function(i){
-                    var fX = Math.ceil(_manager.canvas.width / iterations * i),
-                        fY = Math.ceil(_manager.canvas.height / iterations * i), x, y;
-                        switch (_dir) {
-                            case HORIZONTAL:
-                                x = _reverse ? _manager.canvas.width - fX : fX;
-                                y = 0;break;
-                            default:
-                                y = _reverse ? _manager.canvas.height - fY : fY;
-                                x = 0;break;
-                        }
-                        _overlay.css({"backgroundPosition": x + "px " + y + "px"});
-                        if (_overlay.css('visibility') !== 'visible') {
-                            _overlay.css('visibility', 'visible');
-                        }
-                },
-                completedCallback: function() {
-                    _reverse = !_reverse;
-                    callback();
-                },
-                iterations: iterations,
-                delay: _manager.settings.transitionDelay,
-                scope: this}).run();
+            _manager.putSlideOn(this.node.overlay, index);
+            this.node.overlay.addClass('te-update-deck');
+            this.bindComplete(this.node.overlay);
         }
     }
 }
