@@ -79,6 +79,11 @@ var NEXT = "next",
                 });
                 instance.focus(index);
             },
+            focus: function() {
+                for (var i in _animators) {
+                    _animators[i][i === _index ? "focus" : "blur"]();
+                }
+            },
             animate: function(index) {
                 if (index >= _animators.length) {
                     _index = (index + 1) % _animators.length;
@@ -86,12 +91,13 @@ var NEXT = "next",
                 if (_animators.length === 1) {
                     _index = 0;
                 }
-                this.get(_index).updateState(index);
+                this.focus();
+                this.get(_index).animate(index);
             },
             get: function(index) {
                 return typeof index === "undefined" ? _animators[_index] : _animators[index];
             },
-            getList: function(index) {
+            getList: function() {
                 return _animators;
             }
         }
@@ -111,17 +117,29 @@ var NEXT = "next",
                     .appendTo(managerBoundingBox);
             return this;
         },
+        blur: function() {
+            this.node.boundingBox.hide();
+            return this;
+        },
         focus: function() {
             this.node.boundingBox.show();
             return this;
         },
+        reset: function() {
+            $(document).trigger('end-transition.t-effect', []);
+            this.resetState();
+        },
+        animate: function(index) {
+            $(document).trigger('start-transition.t-effect', [index]);
+            this.focus().updateState(index);
+        },
         bindComplete: function(node) {
             node
-                .bind('animationend', $.proxy(this.resetState, this))
-                .bind('oAnimationEnd', $.proxy(this.resetState, this))
-                .bind('msAnimationEnd', $.proxy(this.resetState, this))
-                .bind('webkitAnimationEnd', $.proxy(this.resetState, this))
-                .bind('mozAnimationEnd', $.proxy(this.resetState, this));
+                .bind('animationend', $.proxy(this.reset, this))
+                .bind('oAnimationEnd', $.proxy(this.reset, this))
+                .bind('msAnimationEnd', $.proxy(this.reset, this))
+                .bind('webkitAnimationEnd', $.proxy(this.reset, this))
+                .bind('mozAnimationEnd', $.proxy(this.reset, this));
         }
     },
     Manager = function(settings) {
@@ -295,12 +313,6 @@ var NEXT = "next",
                     this.node.controls[i].data("index", i).bind('click.t-effect', this, _handler.goChosen);
                 }
             },
-            triggerStartEvent : function() {
-                $(document).trigger('start-transition.t-effect', [this.index]);
-            },
-            triggerEndEvent : function() {
-                $(document).trigger('end-transition.t-effect', [this.index]);
-            },
             isset : function(val) {
                 return (typeof val !== "undefined");
             },
@@ -377,7 +389,7 @@ var NEXT = "next",
 
 $.fn.css3 = function(prop, val) {
     var map = {}, css = typeof prop === "object" ? prop :
-        (function(){var css = {}; css[prop] = val; return css;}());
+        (function(){var css = {};ss[prop] = val;return css;}());
 
     $.each(css, function(prop, val){
         map[prop] =
@@ -396,20 +408,30 @@ $.fn.tEffects = function(settings) {
 
 $.tEffects = typeof $.tEffects === "undefined" ? {} : $.tEffects;
 
+
+$.tEffects.__Interface__  = function(manager) {
+    return {
+        init: function() {},
+        resetState: function() {},
+        updateState: function(index) {}
+    }
+}
+
 $.tEffects.Default = function(manager) {
     var _manager = manager;
     return {
-        renderFunction: null,
         init: function() {
-            _manager.attachSlideTo("boundingBox");
+            this.renderUnderlay();
+            this.renderOverlay();
+            this.node.overlay.hide();
         },
-        update: function(index, callback) {
-            _manager.attachSlideTo("boundingBox", index);
-            callback();
+        resetState: function() {
+            _manager.putSlideOn(this.node.underlay);
+            this.node.overlay.hide();
         },
-        updateFallback: function(index, callback) {
-            _manager.attachSlideTo("boundingBox", index);
-            callback();
+        updateState: function(index) {
+            _manager.putSlideOn(this.node.overlay, index);
+            this.reset();
         }
     }
 };
@@ -423,14 +445,13 @@ $.tEffects.Fallback  = function(manager) {
             this.node.overlay.hide();
         },
         resetState: function() {
-            _manager.triggerEndEvent();
             _manager.putSlideOn(this.node.underlay);
             this.node.overlay.hide();
         },
-        updateState: function(index, callback) {
+        updateState: function(index) {
             _manager.triggerStartEvent();
             _manager.putSlideOn(this.node.overlay, index);
-            this.node.overlay.fadeIn('slow', $.proxy(this.resetState, this));
+            this.node.overlay.fadeIn('slow', $.proxy(this.reset, this));
         }
     }
 }
@@ -438,7 +459,6 @@ $.tEffects.Fallback  = function(manager) {
 $.tEffects.FadeInOut = function(manager) {
     var _manager = manager;
     return {
-        name: "FadeInOut",
         init: function() {
             _manager.css
                 .assignKeyframes("FadeIn", {
@@ -457,12 +477,9 @@ $.tEffects.FadeInOut = function(manager) {
             this.node.overlay.addClass("te-reset-fadein");
         },
         resetState: function() {
-            _manager.triggerEndEvent();
-            _manager.putSlideOn(this.node.underlay);
             this.node.overlay.removeClass('te-update-fadein');
         },
         updateState: function(index, callback) {
-            _manager.triggerStartEvent();
             _manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-fadein');
             this.bindComplete(this.node.overlay);
