@@ -6,6 +6,7 @@
         Supports transittional effect library with stylesheets.
 */
 
+/* @TODO get rid of */
 .te-transition {
  -webkit-transition: all 1s ease-in-out;
   -moz-transition: all 1s ease-in-out;

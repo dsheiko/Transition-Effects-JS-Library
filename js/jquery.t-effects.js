@@ -142,13 +142,26 @@ var NEXT = "next",
             get: function(index) {
                 return typeof index === "undefined" ? _animators[_index] : _animators[index];
             },
-            getList: function() {
-                return _animators;
+            init: function(manager) {
+                $.each(_animators, function(i, instance) {
+                    instance.__constructor(manager);
+                });
             }
         }
     },
     AnimatorMixins = {
         node: {},
+        __constructor: function(manager) {
+            this.manager = manager;
+            this.isReverse = manager.settings.direction === RIGHTTOLEFT
+                || manager.settings.direction === BOTTOMTOTOP;
+            this.isHorizontal = manager.settings.direction === RIGHTTOLEFT
+                || manager.settings.direction === LEFTTORIGHT;
+            this.renderBoundingBox(manager.node.boundingBox);
+            this.init();
+        },
+        isReverse: false,
+        isHorizontal: true,
         renderSlider: function() {
             this.node.slider = $('<div class="te-slider"><!-- --></div>')
             .appendTo(this.node.boundingBox);
@@ -166,6 +179,16 @@ var NEXT = "next",
             this.node.boundingBox = $('<div class="te-layer">')
                     .appendTo(managerBoundingBox);
             return this;
+        },
+        getLinearGridCellSize : function() {
+            var _dir = this.settings.direction;
+            return  {
+                'width' : _dir === HORIZONTAL ? this.canvas.width  // Horizontal transition
+                    : Math.ceil(this.canvas.width / this.settings.cols), // Vertical one
+                'height' : _dir === HORIZONTAL
+                    ? Math.ceil(this.canvas.height / this.settings.rows)
+                    : this.canvas.height
+            };
         },
         blur: function() {
             this.node.boundingBox.hide();
@@ -300,17 +323,16 @@ var NEXT = "next",
 
 
             populateAnimatorCollection : function() {
-                var manager = this;
                 $.each(this.settings.effect, function(i, effect){
                     if (typeof $.tEffects[effect] === "undefined") {
                         throw "The implementation library of " + this.settings.effect + " effect not found";
                     }
-                    var animator = new $.tEffects[effect](manager);
+                    var animator = new $.tEffects[effect]();
                     if (typeof animator.uses !== "undefined"
-                        && !manager.css.areAllPropertiesSupported(animator.uses)) {
+                        && !_manager.css.areAllPropertiesSupported(animator.uses)) {
                         animator =
                             new $.tEffects[ typeof animator.fallback === "undefined"
-                                ? "DefaultFallback" : animator.fallback](manager);
+                                ? "DefaultFallback" : animator.fallback]();
                     }
                     $.extend(animator, AnimatorMixins);
                     // Obtain an instance of implementor
@@ -319,15 +341,10 @@ var NEXT = "next",
             },
 
             render: function() {
-                var boundingBox =
-                        this.node.boundingBox.addClass('te-boundingBox').html('');
-
+                this.node.boundingBox.addClass('te-boundingBox').html('');
                 // Collect markup required for requested affects
-                $.each(_animatorCollection.getList(), function(i, instance) {
-                    instance.renderBoundingBox(boundingBox);
-                    instance.init();
-                });
-                boundingBox.find("> .te-layer").css({"visibility": "visible"});
+                _animatorCollection.init(this);
+                this.node.boundingBox.find("> .te-layer").css({"visibility": "visible"});
                 this.css.commit();
                 // Initilize the first animator
                 _animatorCollection.get().focus().resetState();
@@ -426,16 +443,6 @@ var NEXT = "next",
                     }
                 }
                 return $(this.node.slides[typeof key !== "undefined" ? key : this.index]);
-            },
-            getLinearGridCellSize : function() {
-                var _dir = this.settings.direction;
-                return  {
-                    'width' : _dir === HORIZONTAL ? this.canvas.width  // Horizontal transition
-                        : Math.ceil(this.canvas.width / this.settings.cols), // Vertical one
-                    'height' : _dir === HORIZONTAL
-                        ? Math.ceil(this.canvas.height / this.settings.rows)
-                        : this.canvas.height
-                };
             }
         }
     }
@@ -453,7 +460,7 @@ $.fn.tEffects = function(settings) {
 $.tEffects = typeof $.tEffects === "undefined" ? {} : $.tEffects;
 
 
-$.tEffects.__Interface__  = function(manager) {
+$.tEffects.__Interface__  = function() {
     return {
         init: function() {},
         resetState: function() {},
@@ -461,8 +468,7 @@ $.tEffects.__Interface__  = function(manager) {
     }
 }
 
-$.tEffects.Default = function(manager) {
-    var _manager = manager;
+$.tEffects.Default = function() {
     return {
         init: function() {
             this.renderUnderlay();
@@ -470,18 +476,17 @@ $.tEffects.Default = function(manager) {
             this.node.overlay.hide();
         },
         resetState: function() {
-            _manager.putSlideOn(this.node.underlay);
+            this.manager.putSlideOn(this.node.underlay);
             this.node.overlay.hide();
         },
         updateState: function(index) {
-            _manager.putSlideOn(this.node.overlay, index);
+            this.manager.manager.putSlideOn(this.node.overlay, index);
             this.reset();
         }
     }
 };
 
-$.tEffects.DefaultFallback  = function(manager) {
-    var _manager = manager;
+$.tEffects.DefaultFallback  = function() {
     return {
         init: function() {
             this.renderUnderlay();
@@ -489,23 +494,22 @@ $.tEffects.DefaultFallback  = function(manager) {
             this.node.overlay.hide();
         },
         resetState: function() {
-            _manager.putSlideOn(this.node.underlay);
+            this.manager.putSlideOn(this.node.underlay);
             this.node.overlay.hide();
         },
         updateState: function(index) {
-            _manager.putSlideOn(this.node.overlay, index);
+            this.manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.fadeIn('slow', $.proxy(this.reset, this));
         }
     }
 }
 
-$.tEffects.FadeInOut = function(manager) {
-    var _manager = manager;
+$.tEffects.Fade = function() {
     return {
         uses: ["animation", "transform"],
         fallback: "DefaultFallback",
         init: function() {
-            _manager.css
+            this.manager.css
                 .assignKeyframes("FadeIn", {
                     "from": {"opacity" : "0"},
                     "to": {"opacity" : "1"}
@@ -514,7 +518,7 @@ $.tEffects.FadeInOut = function(manager) {
                     "opacity" : "0"
                 })
                 .assignRule(".te-update-fadein", {
-                    "animation" : "FadeIn " + _manager.settings.transitionDuration + "s ease-in-out",
+                    "animation" : "FadeIn " + this.manager.settings.transitionDuration + "s ease-in-out",
                     "opacity" : "1"
                 });
             this.renderUnderlay();
@@ -522,54 +526,48 @@ $.tEffects.FadeInOut = function(manager) {
             this.node.overlay.addClass("te-reset-fadein");
         },
         resetState: function() {
-            _manager.putSlideOn(this.node.underlay);
+            this.manager.putSlideOn(this.node.underlay);
             this.node.overlay.removeClass('te-update-fadein');
         },
         updateState: function(index) {
-            _manager.putSlideOn(this.node.overlay, index);
+            this.manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-fadein');
             this.bindComplete(this.node.overlay);
         }
     }
 }
 
-$.tEffects.Deck = function(manager) {
-    var _manager = manager;
+$.tEffects.Deck = function() {
     return {
         uses: ["animation", "transform"],
         fallback: "DefaultFallback",
         init: function() {
-            var reverse = _manager.settings.direction === RIGHTTOLEFT
-                || _manager.settings.direction === BOTTOMTOTOP,
-                isHorizontal = _manager.settings.direction === RIGHTTOLEFT
-                || _manager.settings.direction === LEFTTORIGHT;
-
-            _manager.css
+            this.manager.css
                 .assignKeyframes("Deck", {
                     "from": {
-                        "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (reverse ? "0%" : "100%") + ")"
+                        "transform" : "translate" + ( this.isHorizontal ? "X" : "Y") + "(" + (this.isReverse ? "0%" : "100%") + ")"
                     },
                     "to": {
-                        "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (!reverse ? "0%" : "100%") + ")"
+                        "transform" : "translate" + ( this.isHorizontal ? "X" : "Y") + "(" + (!this.isReverse ? "0%" : "100%") + ")"
                     }
                 })
                 .assignRule(".te-reset-deck", {
-                    "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (reverse ? "0%" : "100%") + ")"
+                    "transform" : "translate" + ( this.isHorizontal ? "X" : "Y") + "(" + (this.isReverse ? "0%" : "100%") + ")"
                 })
                 .assignRule(".te-update-deck", {
-                    "animation" : "Deck " + _manager.settings.transitionDuration + "s ease-in-out",
-                    "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (!reverse ? "0%" : "100%") + ")"
+                    "animation" : "Deck " + this.manager.settings.transitionDuration + "s ease-in-out",
+                    "transform" : "translate" + ( this.isHorizontal ? "X" : "Y") + "(" + (!this.isReverse ? "0%" : "100%") + ")"
                 });
 
             this.renderUnderlay();
             this.renderOverlay();
         },
         resetState: function() {
-            _manager.putSlideOn(this.node.underlay);
+            this.manager.putSlideOn(this.node.underlay);
             this.node.overlay.removeClass('te-update-deck');
         },
         updateState: function(index) {
-            _manager.putSlideOn(this.node.overlay, index);
+            this.manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-deck');
             this.bindComplete(this.node.overlay);
         }
@@ -577,16 +575,11 @@ $.tEffects.Deck = function(manager) {
 }
 
 
-$.tEffects.Scroll = function(manager) {
-    var _manager = manager,
-        _sliderWidth = _manager.settings.width * _manager.node.slides.length,
-        _isHorizontal = _manager.settings.direction === RIGHTTOLEFT
-                || _manager.settings.direction === LEFTTORIGHT,
-        _getNewPositionRule = function(index) {
+$.tEffects.Scroll = function() {
+    var _getNewPositionRule = function(index) {
             var offset = index *
-                (_isHorizontal ? _manager.settings.width : _manager.settings.height);
-
-            return "translate" + (_isHorizontal
+                (this.isHorizontal ? this.manager.settings.width : this.manager.settings.height);
+            return "translate" + (this.isHorizontal
                 ? "X" : "Y") + "(-" + offset + "px)";
         };
     return {
@@ -595,54 +588,49 @@ $.tEffects.Scroll = function(manager) {
          init: function() {
             this.renderSlider();
             this.node.slider
-                .append(_manager.node.slides.clone())
+                .append(this.manager.node.slides.clone())
                 .css({
-                    "width": _sliderWidth,
-                    "transition": "all " + _manager.settings.transitionDuration + "s ease-in-out"
+                    "width": this.manager.settings.width * this.manager.node.slides.length,
+                    "transition": "all " + this.manager.settings.transitionDuration + "s ease-in-out"
                 })
                 .find("img").css({
-                    "display": (_isHorizontal ? "inline" : "block")
+                    "display": (this.isHorizontal ? "inline" : "block")
                 });
         },
         resetState: function() {
         },
         updateState: function(index) {
-            this.node.slider.css("transform", _getNewPositionRule(index));
+            this.node.slider.css("transform", _getNewPositionRule.apply(this, [index]));
         }
     }
 }
 
 
 $.tEffects.ScrollFallback  = function(manager) {
-    var _manager = manager,
-        _sliderWidth = _manager.settings.width * _manager.node.slides.length,
-        _isHorizontal = _manager.settings.direction === RIGHTTOLEFT
-                || _manager.settings.direction === LEFTTORIGHT;
     return {
         init: function() {
             this.renderSlider();
             this.node.slider
-                .append(_manager.node.slides.clone())
+                .append(this.manager.node.slides.clone())
                 .css({
-                    "width": _sliderWidth
+                    "width": this.manager.settings.width * this.manager.node.slides.length
                 })
                 .find("img").css({
-                    "display": (_isHorizontal ? "inline" : "block")
+                    "display": (this.isHorizontal ? "inline" : "block")
                 });
         },
         resetState: function() {
         },
         updateState: function(index) {
             var context = this;
-            _manager.node.boundingBox.animate(
-                _isHorizontal ? {scrollLeft: index * _manager.settings.width} : {scrollTop: index * _manager.settings.height}
+            this.manager.node.boundingBox.animate(
+                this.isHorizontal ? {scrollLeft: index * this.manager.settings.width} : {scrollTop: index * this.manager.settings.height}
             , 1000, function() {
                 context.reset();
             });
         }
     }
 }
-
 
 
 
