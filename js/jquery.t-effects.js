@@ -67,24 +67,31 @@ var NEXT = "next",
                 div = null;
                 $.support[prop] = supportedProp
                 return supportedProp;
+            },
+            _hookProp = function(prop) {
+                // Implements cssHooks (http://api.jquery.com/jQuery.cssHooks/)
+                var propPrefixed = _isPropertySupported(prop);
+                if (propPrefixed && propPrefixed !== prop) {
+                    $.cssHooks[prop] = {
+                        get: function( elem, computed, extra ) {
+                            return $.css(elem, propPrefixed);
+                        },
+                        set: function( elem, value) {
+                            elem.style[propPrefixed] = value;
+                        }
+                    };
+                }
             };
-
-            // Implements cssHooks (http://api.jquery.com/jQuery.cssHooks/)
-            var transformPrefixed = _isPropertySupported("transform");
-            if (transformPrefixed && transformPrefixed !== "transform") {
-                $.cssHooks.transform = {
-                    get: function( elem, computed, extra ) {
-                        return $.css(elem, transformPrefixed);
-                    },
-                    set: function( elem, value) {
-                        elem.style[transformPrefixed] = value;
-                    }
-                };
-            }
+            _hookProp("transition");
+            _hookProp("transform");
 
         return {
-            isTransitionsSupported : function() {
-                return _isPropertySupported("transform");
+            areAllPropertiesSupported: function(props) {
+                var flag = true;
+                for (var i in props) {
+                    flag = flag && !!_isPropertySupported(props[i])
+                }
+                return flag;
             },
             commit: function() {
                 $("body").append('<style type="text/css">' + _stylesheet + '</style>');
@@ -143,7 +150,7 @@ var NEXT = "next",
     AnimatorMixins = {
         node: {},
         renderSlider: function() {
-            this.node.slider = $('<div class="te-slider te-transition"><!-- --></div>')
+            this.node.slider = $('<div class="te-slider"><!-- --></div>')
             .appendTo(this.node.boundingBox);
             return this;
         },
@@ -294,15 +301,20 @@ var NEXT = "next",
 
             populateAnimatorCollection : function() {
                 var manager = this;
-                if (!this.css.isTransitionsSupported()) {
-                    return _animatorCollection.push(new $.tEffects.Fallback(manager));
-                }
                 $.each(this.settings.effect, function(i, effect){
                     if (typeof $.tEffects[effect] === "undefined") {
                         throw "The implementation library of " + this.settings.effect + " effect not found";
                     }
+                    var animator = new $.tEffects[effect](manager);
+                    if (typeof animator.uses !== "undefined"
+                        && !manager.css.areAllPropertiesSupported(animator.uses)) {
+                        animator =
+                            new $.tEffects[ typeof animator.fallback === "undefined"
+                                ? "DefaultFallback" : animator.fallback](manager);
+                    }
+                    $.extend(animator, AnimatorMixins);
                     // Obtain an instance of implementor
-                    _animatorCollection.push(new $.tEffects[effect](manager));
+                    _animatorCollection.push(animator);
                 });
             },
 
@@ -312,7 +324,6 @@ var NEXT = "next",
 
                 // Collect markup required for requested affects
                 $.each(_animatorCollection.getList(), function(i, instance) {
-                    $.extend(instance, AnimatorMixins);
                     instance.renderBoundingBox(boundingBox);
                     instance.init();
                 });
@@ -469,7 +480,7 @@ $.tEffects.Default = function(manager) {
     }
 };
 
-$.tEffects.Fallback  = function(manager) {
+$.tEffects.DefaultFallback  = function(manager) {
     var _manager = manager;
     return {
         init: function() {
@@ -491,6 +502,8 @@ $.tEffects.Fallback  = function(manager) {
 $.tEffects.FadeInOut = function(manager) {
     var _manager = manager;
     return {
+        uses: ["animation", "transform"],
+        fallback: "DefaultFallback",
         init: function() {
             _manager.css
                 .assignKeyframes("FadeIn", {
@@ -501,7 +514,7 @@ $.tEffects.FadeInOut = function(manager) {
                     "opacity" : "0"
                 })
                 .assignRule(".te-update-fadein", {
-                    "animation" : "FadeIn 1s ease-in-out",
+                    "animation" : "FadeIn " + _manager.settings.transitionDuration + "s ease-in-out",
                     "opacity" : "1"
                 });
             this.renderUnderlay();
@@ -523,6 +536,8 @@ $.tEffects.FadeInOut = function(manager) {
 $.tEffects.Deck = function(manager) {
     var _manager = manager;
     return {
+        uses: ["animation", "transform"],
+        fallback: "DefaultFallback",
         init: function() {
             var reverse = _manager.settings.direction === RIGHTTOLEFT
                 || _manager.settings.direction === BOTTOMTOTOP,
@@ -542,7 +557,7 @@ $.tEffects.Deck = function(manager) {
                     "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (reverse ? "0%" : "100%") + ")"
                 })
                 .assignRule(".te-update-deck", {
-                    "animation" : "Deck 1s ease-in-out",
+                    "animation" : "Deck " + _manager.settings.transitionDuration + "s ease-in-out",
                     "transform" : "translate" + ( isHorizontal ? "X" : "Y") + "(" + (!reverse ? "0%" : "100%") + ")"
                 });
 
@@ -575,11 +590,16 @@ $.tEffects.Scroll = function(manager) {
                 ? "X" : "Y") + "(-" + offset + "px)";
         };
     return {
+         uses: ["transition", "transform"],
+         fallback: "ScrollFallback",
          init: function() {
             this.renderSlider();
             this.node.slider
                 .append(_manager.node.slides.clone())
-                .css("width", _sliderWidth)
+                .css({
+                    "width": _sliderWidth,
+                    "transition": "all " + _manager.settings.transitionDuration + "s ease-in-out"
+                })
                 .find("img").css({
                     "display": (_isHorizontal ? "inline" : "block")
                 });
@@ -593,28 +613,38 @@ $.tEffects.Scroll = function(manager) {
 }
 
 
-/*
- updateFallback: function(index, callback) {
-             var initX = _manager.index * _manager.canvas.width,
-                 offsetX = (index * _manager.canvas.width - initX),
-                 initY = _manager.index * _manager.canvas.height,
-                 offsetY = (index * _manager.canvas.height - initY);
-
-             $.aQueue.add({
-                startedCallback: function(){},
-                iteratedCallback: function(i){
-                    if (_dir === HORIZONTAL) {
-                        _manager.node.boundingBox.scrollLeft(initX + Math.ceil(offsetX / 10 * i));
-                    } else {
-                        _manager.node.boundingBox.scrollTop(initY + Math.ceil(offsetY / 10 * i));
-                    }
-                },
-                completedCallback: callback,
-                iterations: (_dir === HORIZONTAL ? _manager.settings.rows : _manager.settings.cols),
-                delay: _manager.settings.transitionDelay,
-                scope: this}).run();
+$.tEffects.ScrollFallback  = function(manager) {
+    var _manager = manager,
+        _sliderWidth = _manager.settings.width * _manager.node.slides.length,
+        _isHorizontal = _manager.settings.direction === RIGHTTOLEFT
+                || _manager.settings.direction === LEFTTORIGHT;
+    return {
+        init: function() {
+            this.renderSlider();
+            this.node.slider
+                .append(_manager.node.slides.clone())
+                .css({
+                    "width": _sliderWidth
+                })
+                .find("img").css({
+                    "display": (_isHorizontal ? "inline" : "block")
+                });
+        },
+        resetState: function() {
+        },
+        updateState: function(index) {
+            var context = this;
+            _manager.node.boundingBox.animate(
+                _isHorizontal ? {scrollLeft: index * _manager.settings.width} : {scrollTop: index * _manager.settings.height}
+            , 1000, function() {
+                context.reset();
+            });
         }
- */
+    }
+}
+
+
+
 
 $.tEffects.Ladder = function(manager) {
     var _manager = manager, _cell, _cells, _dir = _manager.settings.direction, _overlay,
