@@ -82,8 +82,11 @@ var NEXT = "next",
                     };
                 }
             };
+            _hookProp("animation");
+            _hookProp("animationDelay");
             _hookProp("transition");
             _hookProp("transform");
+            _hookProp("transformOrigin");
 
         return {
             areAllPropertiesSupported: function(props) {
@@ -95,6 +98,11 @@ var NEXT = "next",
             },
             commit: function() {
                 $("body").append('<style type="text/css">' + _stylesheet + '</style>');
+            },
+            assignRules: function(rules) {
+                for (var i in rules) {
+                    this.assignRule(rules[i].selector, rules[i].rules);
+                }
             },
             assignRule: function(selector, ruleSet) {
                 _stylesheet += "\n" + selector + " { \n" + _getRuleNormalized(ruleSet) + "\n}";
@@ -143,25 +151,64 @@ var NEXT = "next",
                 return typeof index === "undefined" ? _animators[_index] : _animators[index];
             },
             init: function(manager) {
-                $.each(_animators, function(i, instance) {
-                    instance.__constructor(manager);
+                $.each(_animators, function(id, instance) {
+                    instance.__constructor(manager, id);
                 });
             }
         }
     },
     AnimatorMixins = {
         node: {},
-        __constructor: function(manager) {
+        __constructor: function(manager, id) {
             this.manager = manager;
+            this.id = id;
             this.isReverse = manager.settings.direction === RIGHTTOLEFT
                 || manager.settings.direction === BOTTOMTOTOP;
             this.isHorizontal = manager.settings.direction === RIGHTTOLEFT
                 || manager.settings.direction === LEFTTORIGHT;
             this.renderBoundingBox(manager.node.boundingBox);
+            this.gridCellSize = {
+                'width' : Math.ceil(this.manager.settings.width / this.manager.settings.cols),
+                'height': Math.ceil(this.manager.settings.height / this.manager.settings.rows)
+            };
+            this.cssClassScope = ".te-layer[data-id=\"" + this.id + "\"] ";
             this.init();
         },
         isReverse: false,
         isHorizontal: true,
+
+        renderLinearGrid: function() {
+            var grid, html = '<div class="te-overlay te-' + (this.isHorizontal ? "horizontal" : "vertical") + '-grid">'
+                + '<div class="te-grid">';
+            for (var i = 0, limit = (this.isHorizontal
+                ? this.manager.settings.rows : this.manager.settings.cols); i < limit; i++) {
+                html += '<div class="te-' + (i % 2 ? 'even' : 'odd') + '"><!-- --></div>';
+            }
+            html += '</div></div>';
+            grid = $(html).appendTo(this.node.boundingBox);
+            this.node.slices = grid.find('div.te-grid > div');
+            // Adjust sizes of slices and their outer box
+            grid.find('div.te-grid').css({
+                "width": this.gridCellSize.width * this.manager.settings.cols,
+                "display": "block"
+            });
+            this.node.slices.css({
+                'width': this.isHorizontal ? this.manager.settings.width : this.gridCellSize.width,
+                'height' : this.gridCellSize.height
+            });
+            return this;
+        },
+        renderCrossedGrid: function() {
+            var html = html = '<div class="te-overlay te--' + (this.isHorizontal ? "horizontal" : "vertical") + '-grid">'
+                + '<div class="te-grid">';
+            for (var i = 0, limit = (this.manager.settings.dimension * this.manager.settings.dimension);
+                i < limit; i++) {
+                html += '<div><!-- --></div>';
+            }
+            html + '</div></div>';
+            this.node.grid = $(html).appendTo(this.node.boundingBox);
+            return this;
+        },
         renderSlider: function() {
             this.node.slider = $('<div class="te-slider"><!-- --></div>')
             .appendTo(this.node.boundingBox);
@@ -176,19 +223,18 @@ var NEXT = "next",
             return this;
         },
         renderBoundingBox: function(managerBoundingBox) {
-            this.node.boundingBox = $('<div class="te-layer">')
+            this.node.boundingBox = $('<div class="te-layer" data-id="' + this.id + '">')
                     .appendTo(managerBoundingBox);
             return this;
         },
-        getLinearGridCellSize : function() {
-            var _dir = this.settings.direction;
-            return  {
-                'width' : _dir === HORIZONTAL ? this.canvas.width  // Horizontal transition
-                    : Math.ceil(this.canvas.width / this.settings.cols), // Vertical one
-                'height' : _dir === HORIZONTAL
-                    ? Math.ceil(this.canvas.height / this.settings.rows)
-                    : this.canvas.height
-            };
+        putSlideOnGrid: function(index) {
+            var offset = 0, context = this;
+            this.node.slices.each(function(){
+                context.manager.putSlideOn($(this), index).css({
+                    "transform" : "translate" + ( context.isHorizontal ? "Y" : "X") + "(" + offset + "px)"
+                });
+                offset -= (context.isHorizontal ? context.gridCellSize.height : context.gridCellSize.width);
+            });
         },
         blur: function() {
             this.node.boundingBox.hide();
@@ -208,13 +254,14 @@ var NEXT = "next",
             //  and animationEnd event never happened
             this.focus().updateState(index);
         },
-        bindComplete: function(node) {
+        bindComplete: function(node, callback) {
+            callback = callback || $.proxy(this.reset, this);
             node
-                .bind('animationend', $.proxy(this.reset, this))
-                .bind('oAnimationEnd', $.proxy(this.reset, this))
-                .bind('msAnimationEnd', $.proxy(this.reset, this))
-                .bind('webkitAnimationEnd', $.proxy(this.reset, this))
-                .bind('mozAnimationEnd', $.proxy(this.reset, this));
+                .bind('animationend', callback)
+                .bind('oAnimationEnd', callback)
+                .bind('msAnimationEnd', callback)
+                .bind('webkitAnimationEnd', callback)
+                .bind('mozAnimationEnd', callback);
         }
     },
     Manager = function(settings) {
@@ -310,6 +357,11 @@ var NEXT = "next",
                 if (!this.settings.width || !this.settings.height) {
                     this.settings.width = this.node.boundingBox.width();
                     this.settings.height = this.node.boundingBox.height();
+                } else {
+                    this.node.slides.css({
+                        "width" : this.settings.width,
+                        "height" : this.settings.height
+                    });
                 }
             },
             checkEntryConditions: function() {
@@ -320,8 +372,6 @@ var NEXT = "next",
                     settings.effect = "Default";
                 }
             },
-
-
             populateAnimatorCollection : function() {
                 $.each(this.settings.effect, function(i, effect){
                     if (typeof $.tEffects[effect] === "undefined") {
@@ -349,34 +399,6 @@ var NEXT = "next",
                 // Initilize the first animator
                 _animatorCollection.get().focus().resetState();
             },
-
-            renderer: {
-                renderOverlay : function(type) {
-                    var types = {
-                        linearGrid: function() {
-                            var html = '<div class="te-overlay te-' + this.settings.direction + '-grid">'
-                                + '<div class="te-grid">';
-                            for (var i = 0, limit = (this.settings.direction === HORIZONTAL
-                                ? this.settings.rows : this.settings.cols); i < limit; i++) {
-                                html += '<div class="te-' + (i % 2 ? 'even' : 'odd') + '"><!-- --></div>';
-                            }
-                            html += '</div></div>';
-                            return $(html).appendTo(this.node.boundingBox);
-                        },
-                        crossedGrid: function() {
-                            var html = html = '<div class="te-overlay te-' + this.settings.direction + '-grid">'
-                                + '<div class="te-grid">';
-                            for (var i = 0, limit = (this.settings.dimension * this.settings.dimension);
-                                i < limit; i++) {
-                                html += '<div><!-- --></div>';
-                            }
-                            return html + '</div></div>';
-                        }
-                    }
-                    return (this.node.overlay = types[type]);
-                }
-            },
-
 
             renderControls: function() {
                 for(var i = 0, limit = this.node.slides.length; i < limit; i++) {
@@ -427,7 +449,7 @@ var NEXT = "next",
 
             putSlideOn: function(node, index /* optional */) {
                 node.html(''); // clean up
-                return $(this.getSlide(index)).appendTo(node); // append
+                return $(this.getSlide(index)).clone().appendTo(node); // append
             },
 
             getSlide: function(key) {
@@ -524,6 +546,7 @@ $.tEffects.Fade = function() {
             this.renderUnderlay();
             this.renderOverlay();
             this.node.overlay.addClass("te-reset-fadein");
+            this.bindComplete(this.node.overlay);
         },
         resetState: function() {
             this.manager.putSlideOn(this.node.underlay);
@@ -532,7 +555,6 @@ $.tEffects.Fade = function() {
         updateState: function(index) {
             this.manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-fadein');
-            this.bindComplete(this.node.overlay);
         }
     }
 }
@@ -561,6 +583,7 @@ $.tEffects.Deck = function() {
 
             this.renderUnderlay();
             this.renderOverlay();
+            this.bindComplete(this.node.overlay);
         },
         resetState: function() {
             this.manager.putSlideOn(this.node.underlay);
@@ -569,7 +592,6 @@ $.tEffects.Deck = function() {
         updateState: function(index) {
             this.manager.putSlideOn(this.node.overlay, index);
             this.node.overlay.addClass('te-update-deck');
-            this.bindComplete(this.node.overlay);
         }
     }
 }
@@ -593,7 +615,7 @@ $.tEffects.Scroll = function() {
                     "width": this.manager.settings.width * this.manager.node.slides.length,
                     "transition": "all " + this.manager.settings.transitionDuration + "s ease-in-out"
                 })
-                .find("img").css({
+                .find("> *").css({
                     "display": (this.isHorizontal ? "inline" : "block")
                 });
         },
@@ -632,117 +654,125 @@ $.tEffects.ScrollFallback  = function(manager) {
     }
 }
 
-
-
-$.tEffects.Ladder = function(manager) {
-    var _manager = manager, _cell, _cells, _dir = _manager.settings.direction, _overlay,
-        _reverse = false;
+$.tEffects.Butterfly = function() {
     return {
+        uses: ["animation", "transform"],
+        fallback: "DefaultFallback",
         init: function() {
-            _cell = _manager.getLinearGridCellSize();
-            _manager.attachSlideTo("boundingBox");
-            _overlay = _manager.renderOverlay("LinearGrid");
-            _cells = _overlay.find('div.te-grid > div');
-            // Ceils wrapper guarantees that when column width * columns number != overlay width
-            // columns are still in line
-            _overlay.find('div.te-grid').css({
-                "width": _cell.width * _manager.settings.cols,
-                "display": "block"
-            });
-            var method = 'render' + (Util.isPropertySupported('transform') ? '' : 'Fallback');
-            this[method]();
-        },
-        render: function() {
-            var offset = 0, delay = 0;
-            _cells.css({
-                'width': _dir === HORIZONTAL ? 0 : _cell.width,
-                'height' : _dir === HORIZONTAL ? _cell.height : 0
+            this.manager.css
+                .assignKeyframes("Ladder", {
+                    "from": {
+                        "transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(0)"
+                    },
+                    "to": {
+                        "transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(1)"
+                    }
                 })
-                .addClass('te-transition')
-                .css3('transition-duration', _manager.settings.transitionDuration + "s")
-                .each(function(){
-                    $(this).css({
-                        'backgroundImage': 'url(' + _manager.getSlide().attr('src') + ')',
-                        'backgroundPosition': (_dir === HORIZONTAL
-                            ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
-                        'backgroundRepeat': 'no-repeat'
-                    }).css3('transition-delay', delay + 'ms')
-                    delay += _manager.settings.transitionDelay;
-                    offset -= (_dir === HORIZONTAL ? _cell.height : _cell.width);
+                .assignRules([
+                     { selector: this.cssClassScope + ".te-grid > div",
+                       rules : {"transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(0)"}
+                     },
+                     { selector: this.cssClassScope + ".te-grid > div.te-updated",
+                       rules : {"transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(1)"}
+                     },
+                     { selector: this.cssClassScope + ".te-grid > div.te-animate",
+                       rules : {"animation" : "Ladder " + this.manager.settings.transitionDuration + "s ease-in-out"}
+                     }
+                ]);
+
+            this.renderUnderlay();
+            this.renderLinearGrid();
+            this.manager.putSlideOn(this.node.underlay);
+
+            var lastAnimatedNode, delay = 0, context = this;
+            this.node.slices.each(function(){
+                lastAnimatedNode = $(this)
+                .css({
+                    "animation-delay" : delay + "ms"
+                });
+                context.bindComplete($(this), function(){
+                    $(this).addClass("te-updated");
+                    $(this).removeClass("te-animate");
+                });
+                delay += context.manager.settings.transitionDelay;
+            });
+            this.bindComplete(lastAnimatedNode);
+
+        },
+        resetState: function() {
+            this.manager.putSlideOn(this.node.underlay);
+            this.node.slices.each(function(){
+                $(this)
+                    .removeClass("te-animate")
+                    .removeClass("te-updated");
             });
         },
-        renderFallback: function() {
-            _cells.css({
-                'width': _cell.width,
-                'height': _cell.height
-            });
-        },
-        update: function(index, callback) {
-            _manager
-                .attachSlideTo("boundingBox", (_reverse ? index : undefined))
-                .attachSlideTo(_cells, (!_reverse ? index : undefined));
-
-            // Make the transition
-            if (_dir === HORIZONTAL) {
-                _cells.css("width", (_reverse ? "1px" :  _manager.canvas.width));
-            } else {
-                _cells.css("height", (_reverse ? "1px" : _manager.canvas.height));
-            }
-            _reverse = !_reverse;
-            window.setTimeout(callback, _manager.settings.transitionDuration * 1000);
-        },
-        updateFallback: function(index, callback) {
-             $.aQueue.add({
-                startedCallback: function(){
-                    var offset = 0;
-                    _manager
-                        .attachSlideTo("boundingBox", !_reverse ? undefined : index);
-                    _cells.each(function(){
-                        $(this).css({
-                            'backgroundImage': 'url(' + _manager.getSlide(_reverse ? undefined : index).attr('src') + ')',
-                            'backgroundPosition': (_dir === HORIZONTAL
-                                ? ('0px ' + offset + 'px') : (offset + 'px 0px')),
-                            'backgroundRepeat': 'no-repeat'
-                        });
-                        offset -= (_dir === HORIZONTAL ? _cell.height : _cell.width);
-                    });
-                    _cells.css(_dir === HORIZONTAL
-                        ? {'width': _reverse ? _cell.width : 0}
-                        : {'height': _reverse ? _cell.height : 0}
-                    );
-                },
-                iteratedCallback: function(i){
-                    var val, factor = _dir === HORIZONTAL
-                            ? Math.ceil(_manager.canvas.width / _manager.settings.rows)
-                            : Math.ceil(_manager.canvas.height / _manager.settings.cols);
-
-                    _cells.each(function(inx){
-                           val = (factor * i) - (inx * factor);
-                           if (_dir === HORIZONTAL) {
-                               $(this).css('width',
-                               _reverse ?
-                                    ((_manager.canvas.width - val > 0)  ? _manager.canvas.width - val : 0) :
-                                    (val > _manager.canvas.width ? _manager.canvas.width : val)
-                                );
-                           } else {
-                                $(this).css('height',
-                                    _reverse ?
-                                    ((_manager.canvas.height - val > 0)  ? _manager.canvas.height - val : 0) :
-                                    (val > _manager.canvas.height ? _manager.canvas.height : val)
-                                );
-                           }
-                    });
-                },
-                completedCallback: function() {
-                    _reverse = !_reverse;
-                    callback();
-                },
-                iterations: (_dir === HORIZONTAL ? _manager.settings.rows : _manager.settings.cols) *  2,
-                delay: _manager.settings.transitionDelay,
-                scope: this}).run();
+        updateState: function(index) {
+            this.putSlideOnGrid(index);
+            this.node.slices.addClass("te-animate");
         }
     }
 }
+
+
+$.tEffects.Ladder = function() {
+    return {
+        uses: ["animation", "transform"],
+        fallback: "DefaultFallback",
+        init: function() {
+
+            this.manager.css
+                .assignKeyframes("Ladder", {
+                    "from": {
+                        "transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(" + (this.isReverse ? "1" : "0") + ")"
+                    },
+                    "to": {
+                        "transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(" + (this.isReverse ? "0" : "1") + ")"
+                    }
+                })
+                .assignRule(".te-invisible-ladder", {
+                    "transform" : "scale" + ( this.isHorizontal ? "X" : "Y") + "(0)"
+                })
+                .assignRule(".te-animate", {
+                    "animation" : "Ladder " + this.manager.settings.transitionDuration + "s ease-in-out"
+                });
+
+            this.renderUnderlay();
+            this.renderLinearGrid();
+            this.manager.putSlideOn(this.node.underlay);
+
+            var lastAnimatedNode, delay = 0, context = this;
+            this.node.slices.each(function(){
+                lastAnimatedNode = $(this)
+                .addClass("te-invisible-ladder")
+                .css({
+                    "transform-origin": "left top",
+                    "animation-delay" : delay + "ms"
+                });
+                context.bindComplete($(this), function(){
+                    $(this).removeClass("te-invisible-ladder");
+                    $(this).removeClass("te-animate");
+                });
+                delay += context.manager.settings.transitionDelay;
+            });
+            this.bindComplete(lastAnimatedNode);
+
+        },
+        resetState: function() {
+            this.manager.putSlideOn(this.node.underlay);
+            this.node.slices.each(function(){
+                $(this)
+                    .removeClass("te-animate")
+                    .addClass("te-invisible-ladder");
+            });
+        },
+        updateState: function(index) {
+            this.putSlideOnGrid(index);
+            this.node.slices.addClass("te-animate");
+        }
+    }
+}
+
 
 $.tEffects.Jaw = function(manager) {
     var _manager = manager, _dir = _manager.settings.direction, _overlay,
