@@ -59,7 +59,7 @@ The slide-show is running and can be navigated by arrows-keys, but you want to s
 #### Available Options
 
 effect
-    transition effect: Default, FadeInOut, Jalousie, Ladder, Scroll, Deck, Jaw, DiagonalCells, RandomCells 
+    transition effect: Default, FadeInOut, Jalousie, Ladder, Scroll, Deck, Jaw, DiagonalCells, RandomCells
 
 direction
     transition direction: vertical or horizontal
@@ -105,10 +105,13 @@ end-transition.t-effect
 #### Methods
 
 enable
-    enables arrow-keys and given controls. 
+    enables arrow-keys and given controls.
 
 disable
     disables arrow-keys and given controls. E.g. you have the slide show on an overlay. When overlay is hidden, you use disable method to unsubscribe controls. When the overlay is visible again, use disable method.
 
 reset
-    you can reset options on a running tEffetcs instance 
+    you can reset options on a running tEffetcs instance
+
+
+[![Analytics](https://ga-beacon.appspot.com/UA-1150677-13/dsheiko/Transition-Effects-JS-Library)](http://githalytics.com/dsheiko/Transition-Effects-JS-Library)
